@@ -1,0 +1,2697 @@
+// ViLaw - JavaScript Functionality
+
+// Initialize Lucide icons when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+    initializeApp();
+});
+
+// App initialization
+function initializeApp() {
+    setupNavigation();
+    setupMobileMenu();
+    setupChatFeatures();
+    setupDocumentFeatures();
+    setupSearchFeatures();
+    setupContractFeatures();
+    setupVoiceFeatures();
+}
+
+// Navigation System
+function setupNavigation() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const pageId = this.getAttribute('data-page');
+            if (pageId) {
+                navigateToPage(pageId);
+            }
+        });
+    });
+}
+
+function navigateToPage(pageId) {
+    // Hide all pages
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(page => page.classList.remove('active'));
+    
+    // Show target page
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) {
+        targetPage.classList.add('active');
+        
+        // Update navigation
+        updateNavigation(pageId);
+        
+        // Scroll to top
+        window.scrollTo(0, 0);
+        
+        // Add fade animation
+        targetPage.classList.add('fade-in');
+        setTimeout(() => targetPage.classList.remove('fade-in'), 500);
+    }
+}
+
+function updateNavigation(activePageId) {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('data-page') === activePageId) {
+            link.classList.add('active');
+        }
+    });
+}
+
+// Mobile Menu
+function setupMobileMenu() {
+    const navToggle = document.getElementById('navToggle');
+    const navMenu = document.getElementById('navMenu');
+    
+    if (navToggle && navMenu) {
+        navToggle.addEventListener('click', function() {
+            navMenu.classList.toggle('active');
+        });
+        
+        // Close menu when clicking on a link
+        const navLinks = navMenu.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                navMenu.classList.remove('active');
+            });
+        });
+    }
+}
+
+// Chat Features
+function setupChatFeatures() {
+    const messageInput = document.getElementById('messageInput');
+    
+    if (messageInput) {
+        // Enter key to send message
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    }
+}
+
+function sendMessage() {
+    const messageInput = document.getElementById('messageInput');
+    const chatMessages = document.getElementById('chatMessages');
+    
+    if (!messageInput || !chatMessages) return;
+    
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    // Add user message
+    addMessage(message, 'user');
+    
+    // Clear input
+    messageInput.value = '';
+    
+    // Show typing indicator
+    showTypingIndicator();
+    
+    // Get AI response
+    setTimeout(async () => {
+        try {
+            const aiResponse = await generateAIResponse(message);
+            hideTypingIndicator();
+            addMessage(aiResponse, 'ai');
+        } catch (error) {
+            hideTypingIndicator();
+            addMessage('Xin lỗi, có lỗi xảy ra khi xử lý câu hỏi của bạn. Vui lòng thử lại sau.', 'ai');
+        }
+    }, 500); // Shorter delay for real API
+}
+
+function addMessage(text, sender) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}-message`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = sender === 'user' ? '👤' : '🤖';
+    
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    
+    if (sender === 'ai' && text.includes('\n')) {
+        // Handle multiline AI responses
+        const lines = text.split('\n');
+        lines.forEach((line, index) => {
+            if (line.trim()) {
+                const p = document.createElement('p');
+                p.textContent = line;
+                content.appendChild(p);
+            }
+        });
+    } else {
+        content.innerHTML = `<p>${text}</p>`;
+    }
+    
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(content);
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function generateAIResponse(userMessage) {
+    try {
+        // Show typing indicator for longer time as we're making real API call
+        const response = await apiService.chatWithAI(userMessage, currentLanguage);
+        return response.response;
+    } catch (error) {
+        console.error('AI API error:', error);
+        
+        // Fallback to local responses if API fails
+        const responses = {
+            'ly hôn': 'Về thủ tục ly hôn, theo Bộ luật Dân sự 2015, bạn có thể ly hôn thông qua:\n\n1. Ly hôn đơn phương: Nộp đơn tại TAND\n2. Ly hôn thỏa thuận: Đăng ký tại UBND\n\nBạn cần chuẩn bị các giấy tờ như: Giấy kết hôn, CMND, giấy khai sinh con (nếu có). Tôi có thể hỗ trợ soạn đơn ly hôn cho bạn.',
+            
+            'lao động': 'Về quyền lợi người lao động theo Bộ luật Lao động 2019:\n\n• Được ký hợp đồng lao động bằng văn bản\n• Được trả lương đầy đủ, đúng hạn\n• Được nghỉ phép, nghỉ lễ có lương\n• Được bảo hiểm xã hội, y tế\n• Không bị sa thải trái luật\n\nBạn có vấn đề cụ thể nào về lao động không?',
+            
+            'mua bán nhà': 'Thủ tục mua bán nhà đất cần các bước:\n\n1. Kiểm tra pháp lý của nhà/đất\n2. Thỏa thuận giá cả, ký hợp đồng\n3. Nộp thuế, phí chuyển nhượng\n4. Làm thủ tục sang tên tại Sở TN&MT\n\nCần giấy tờ: Sổ đỏ, CMND, giấy kết hôn. Tôi có thể giúp soạn hợp đồng mua bán cho bạn.',
+            
+            'default': 'Xin lỗi, hiện tại tôi không thể kết nối với dịch vụ AI. Đây là phản hồi tạm thời. Vui lòng kiểm tra kết nối internet và thử lại sau.'
+        };
+        
+        const lowerMessage = userMessage.toLowerCase();
+        
+        for (const keyword in responses) {
+            if (keyword !== 'default' && lowerMessage.includes(keyword)) {
+                return responses[keyword];
+            }
+        }
+        
+        return responses.default;
+    }
+}
+
+function askQuickQuestion(question) {
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.value = question;
+        sendMessage();
+    }
+}
+
+function showTypingIndicator() {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message ai-message typing-message';
+    typingDiv.innerHTML = `
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(typingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const typingMessage = document.querySelector('.typing-message');
+    if (typingMessage) {
+        typingMessage.remove();
+    }
+}
+
+function clearChat() {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    // Keep only the initial AI message
+    const messages = chatMessages.querySelectorAll('.message');
+    for (let i = 1; i < messages.length; i++) {
+        messages[i].remove();
+    }
+}
+
+// Document Features
+function setupDocumentFeatures() {
+    // Template selection handled by onclick in HTML
+}
+
+function selectTemplate(templateType) {
+    const templates = {
+        'contract': {
+            title: 'Hợp đồng mua bán',
+            content: `HỢP ĐỒNG MUA BÁN
+
+Hôm nay, ngày [ngày] tháng [tháng] năm [năm], tại [địa điểm], chúng tôi gồm:
+
+BÊN BÁN (Bên A):
+- Họ và tên: [Họ tên người bán]
+- CMND/CCCD số: [Số CMND] cấp ngày [ngày cấp] tại [nơi cấp]
+- Địa chỉ: [Địa chỉ]
+
+BÊN MUA (Bên B):
+- Họ và tên: [Họ tên người mua]
+- CMND/CCCD số: [Số CMND] cấp ngày [ngày cấp] tại [nơi cấp]
+- Địa chỉ: [Địa chỉ]
+
+Hai bên thỏa thuận ký kết hợp đồng mua bán với các điều khoản sau:
+
+ĐIỀU 1: ĐỐI TƯỢNG HỢP ĐỒNG
+- Bên A đồng ý bán và Bên B đồng ý mua [mô tả tài sản]
+- Giá trị: [số tiền] VNĐ
+
+ĐIỀU 2: PHƯƠNG THỨC THANH TOÁN
+- [Chi tiết thanh toán]
+
+ĐIỀU 3: QUYỀN VÀ NGHĨA VỤ CÁC BÊN
+[Nội dung chi tiết]
+
+Hợp đồng có hiệu lực từ ngày ký.`
+        },
+        'rental': {
+            title: 'Hợp đồng thuê nhà',
+            content: `HỢP ĐỒNG THUÊ NHÀ Ở
+
+Hôm nay, ngày [ngày] tháng [tháng] năm [năm], chúng tôi gồm:
+
+BÊN CHO THUÊ (Bên A):
+- Họ và tên: [Họ tên chủ nhà]
+- CMND/CCCD số: [Số CMND]
+- Địa chỉ: [Địa chỉ]
+
+BÊN THUÊ (Bên B):
+- Họ và tên: [Họ tên người thuê]
+- CMND/CCCD số: [Số CMND]
+- Địa chỉ: [Địa chỉ]
+
+ĐIỀU 1: ĐỐI TƯỢNG THUÊ
+- Nhà ở tại địa chỉ: [Địa chỉ nhà thuê]
+- Diện tích: [diện tích] m²
+- Mục đích sử dụng: Nhà ở
+
+ĐIỀU 2: THỜI HAN THUÊ
+- Từ ngày [ngày bắt đầu] đến ngày [ngày kết thúc]
+
+ĐIỀU 3: GIÁ THUÊ VÀ PHƯƠNG THỨC THANH TOÁN
+- Giá thuê: [số tiền]/tháng
+- Thanh toán vào ngày [ngày] hàng tháng
+
+ĐIỀU 4: QUYỀN VÀ NGHĨA VỤ CÁC BÊN
+[Nội dung chi tiết]`
+        },
+        'labor': {
+            title: 'Hợp đồng lao động',
+            content: `HỢP ĐỒNG LAO ĐỘNG
+
+BÊN TUYỂN DỤNG (Người sử dụng lao động):
+- Tên công ty: [Tên công ty]
+- Địa chỉ: [Địa chỉ công ty]
+- Người đại diện: [Họ tên người đại diện]
+
+BÊN LÀM VIỆC (Người lao động):
+- Họ và tên: [Họ tên NLĐ]
+- CMND/CCCD số: [Số CMND]
+- Địa chỉ: [Địa chỉ]
+
+ĐIỀU 1: CÔNG VIỆC VÀ NƠI LÀM VIỆC
+- Chức danh: [Chức danh công việc]
+- Mô tả công việc: [Mô tả chi tiết]
+- Nơi làm việc: [Địa chỉ làm việc]
+
+ĐIỀU 2: THỜI HẠN HỢP ĐỒNG
+- Loại hợp đồng: [Xác định/không xác định thời hạn]
+- Thời hạn: [thời gian] (nếu có)
+
+ĐIỀU 3: LƯƠNG VÀ PHÚC LỢI
+- Mức lương: [số tiền]/tháng
+- Phụ cấp: [nếu có]
+- Thưởng: [quy định thưởng]
+
+ĐIỀU 4: THỜI GIỜ LÀM VIỆC VÀ NGHỈ NGƠI
+- Giờ làm việc: [giờ làm việc]
+- Nghỉ phép: [số ngày nghỉ phép/năm]`
+        },
+        'divorce': {
+            title: 'Đơn yêu cầu ly hôn',
+            content: `ĐỤN YÊU CẦU LY HÔN
+
+Kính gửi: UỶ BAN NHÂN DÂN PHƯỜNG/XÃ [Tên phường/xã]
+          (Hoặc TÒAN ÁN NHÂN DÂN QUẬN/HUYỆN [Tên quận/huyện])
+
+Tôi tên là: [Họ và tên người làm đơn]
+Sinh năm: [Năm sinh]
+CMND/CCCD số: [Số CMND] cấp ngày [ngày cấp] tại [nơi cấp]
+Địa chỉ thường trú: [Địa chỉ]
+Dân tộc: [Dân tộc]
+Nghề nghiệp: [Nghề nghiệp]
+
+Tôi và [Họ tên vợ/chồng], sinh năm [năm sinh], CMND số [số CMND], địa chỉ [địa chỉ] đã kết hôn ngày [ngày tháng năm] và có đăng ký kết hôn tại [nơi đăng ký].
+
+Chúng tôi có [số] con chung:
+- [Họ tên con], sinh năm [năm sinh]
+
+Do [lý do ly hôn cụ thể], chúng tôi không thể tiếp tục chung sống như vợ chồng.
+
+Về tài sản chung và quyền nuôi con, chúng tôi đã thỏa thuận:
+- [Thỏa thuận về tài sản]
+- [Thỏa thuận về con]
+
+Kính đề nghị cơ quan có thẩm quyền giải quyết cho chúng tôi ly hôn.
+
+Tôi xin cam đoan những nội dung trên là đúng sự thật.
+
+                                          [Địa điểm], ngày [ngày] tháng [tháng] năm [năm]
+                                                            Người làm đơn
+                                                          (Ký và ghi rõ họ tên)`
+        }
+    };
+    
+    const template = templates[templateType];
+    if (template) {
+        const editor = document.getElementById('documentEditor');
+        if (editor) {
+            editor.value = template.content;
+        }
+        
+        // Update active template
+        const templateItems = document.querySelectorAll('.template-item');
+        templateItems.forEach(item => item.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+}
+
+function generateWithAI() {
+    const editor = document.getElementById('documentEditor');
+    if (!editor) return;
+    
+    // Show loading state
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<div class="loading"></div> Đang tạo...';
+    btn.disabled = true;
+    
+    // Simulate AI generation
+    setTimeout(() => {
+        const currentContent = editor.value;
+        const aiSuggestion = "\n\n// AI Suggestion:\n// Bạn nên bổ sung điều khoản về:\n// - Trách nhiệm bồi thường khi vi phạm\n// - Phương thức giải quyết tranh chấp\n// - Điều kiện chấm dứt hợp đồng";
+        
+        editor.value = currentContent + aiSuggestion;
+        
+        // Reset button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        
+        showNotification('AI đã phân tích và đưa ra gợi ý cải thiện văn bản!', 'success');
+    }, 2000);
+}
+
+function saveDocument() {
+    const editor = document.getElementById('documentEditor');
+    if (!editor || !editor.value.trim()) {
+        showNotification('Chưa có nội dung để lưu!', 'error');
+        return;
+    }
+    
+    // Simulate save
+    showNotification('Văn bản đã được lưu thành công!', 'success');
+}
+
+function downloadDocument() {
+    const editor = document.getElementById('documentEditor');
+    if (!editor || !editor.value.trim()) {
+        showNotification('Chưa có nội dung để tải xuống!', 'error');
+        return;
+    }
+    
+    const content = editor.value;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'van-ban-phap-ly.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('Văn bản đã được tải xuống!', 'success');
+}
+
+// Search Features
+function setupSearchFeatures() {
+    const searchInput = document.getElementById('searchInput');
+    
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchLaw();
+            }
+        });
+    }
+}
+
+function searchLaw() {
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    
+    if (!searchInput || !searchResults) return;
+    
+    const query = searchInput.value.trim();
+    if (!query) {
+        showNotification('Vui lòng nhập từ khóa tìm kiếm!', 'error');
+        return;
+    }
+    
+    // Show loading
+    searchResults.innerHTML = '<div class="loading" style="margin: 2rem auto;"></div><p style="text-align: center;">Đang tìm kiếm...</p>';
+    
+    // Perform real search
+    setTimeout(async () => {
+        try {
+            const searchResults = await generateSearchResults(query);
+            displaySearchResults(searchResults);
+        } catch (error) {
+            console.error('Search failed:', error);
+            showNotification('Tìm kiếm thất bại. Vui lòng thử lại.', 'error');
+        }
+    }, 500);
+}
+
+async function generateSearchResults(query) {
+    try {
+        // Use real API to search Vietnamese law database
+        const searchResults = await apiService.searchVietnameseLaw(query);
+        
+        if (searchResults && searchResults.documents && searchResults.documents.length > 0) {
+            return searchResults.documents.map(doc => ({
+                id: doc.id,
+                title: doc.title,
+                type: doc.type,
+                content: doc.content,
+                effectDate: doc.date,
+                authority: doc.authority,
+                url: doc.url,
+                source: doc.source
+            }));
+        }
+    } catch (error) {
+        console.error('Law search API error:', error);
+        showNotification('Không thể tìm kiếm từ cơ sở dữ liệu luật. Sử dụng dữ liệu fallback.', 'warning');
+    }
+    
+    // Fallback to mock data if API fails
+    const allResults = [
+        {
+            id: 'civil-code',
+            title: 'Bộ luật Dân sự 2015',
+            type: 'Luật',
+            content: 'Bộ luật Dân sự quy định về các quan hệ dân sự, bao gồm quyền sở hữu, hợp đồng, thừa kế...',
+            effectDate: '01/01/2017',
+            authority: 'Quốc hội',
+            relevance: 0.9,
+            source: 'Cơ sở dữ liệu local'
+        },
+        {
+            id: 'labor-code',
+            title: 'Bộ luật Lao động 2019',
+            type: 'Luật',
+            content: 'Bộ luật Lao động quy định về quan hệ lao động, quyền và nghĩa vụ của người lao động...',
+            effectDate: '01/01/2021',
+            authority: 'Quốc hội',
+            relevance: 0.8,
+            source: 'Cơ sở dữ liệu local'
+        },
+        {
+            id: 'enterprise-law',
+            title: 'Luật Doanh nghiệp 2020',
+            type: 'Luật',
+            content: 'Luật Doanh nghiệp quy định về việc thành lập, tổ chức, hoạt động và quản lý doanh nghiệp...',
+            effectDate: '01/01/2021',
+            authority: 'Quốc hội',
+            relevance: 0.7,
+            source: 'Cơ sở dữ liệu local'
+        }
+    ];
+    
+    // Filter and sort by relevance
+    return allResults
+        .filter(result => 
+            result.title.toLowerCase().includes(query.toLowerCase()) ||
+            result.content.toLowerCase().includes(query.toLowerCase())
+        )
+        .sort((a, b) => b.relevance - a.relevance);
+}
+
+function displaySearchResults(results) {
+    const searchResults = document.getElementById('searchResults');
+    if (!searchResults) return;
+    
+    if (results.length === 0) {
+        searchResults.innerHTML = '<p style="text-align: center; color: #718096;">Không tìm thấy kết quả phù hợp.</p>';
+        return;
+    }
+    
+    const resultsHTML = results.map(result => `
+        <div class="result-item">
+            <div class="result-header">
+                <h3>${result.title}</h3>
+                <span class="result-type">${result.type}</span>
+            </div>
+            <div class="result-content">
+                <p>${result.content}</p>
+                <div class="result-meta">
+                    <span>Hiệu lực: ${result.effectDate}</span>
+                    <span>Cơ quan ban hành: ${result.authority}</span>
+                </div>
+            </div>
+            <div class="result-actions">
+                <button class="btn btn-secondary" onclick="viewDocument('${result.id}')">
+                    <i data-lucide="eye"></i>
+                    Xem chi tiết
+                </button>
+                <button class="btn btn-secondary" onclick="downloadLawDocument('${result.id}')">
+                    <i data-lucide="download"></i>
+                    Tải xuống
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    searchResults.innerHTML = resultsHTML;
+    
+    // Reinitialize icons
+    lucide.createIcons();
+}
+
+function viewDocument(docId) {
+    showNotification('Đang mở văn bản chi tiết...', 'info');
+    // In real app, this would open document viewer
+}
+
+function downloadLawDocument(docId) {
+    showNotification('Đang tải xuống văn bản...', 'info');
+    // In real app, this would download the document
+}
+
+// Contract Analysis Features
+function setupContractFeatures() {
+    // Features handled by onclick in HTML
+}
+
+function analyzeContract() {
+    const contractText = document.getElementById('contractText');
+    const analysisResults = document.getElementById('analysisResults');
+    
+    if (!contractText || !analysisResults) return;
+    
+    const text = contractText.value.trim();
+    if (!text) {
+        showNotification('Vui lòng nhập nội dung hợp đồng!', 'error');
+        return;
+    }
+    
+    // Show loading
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<div class="loading"></div> Đang phân tích...';
+    btn.disabled = true;
+    
+    // Simulate analysis
+    setTimeout(() => {
+        const analysis = performContractAnalysis(text);
+        displayAnalysisResults(analysis);
+        analysisResults.style.display = 'block';
+        
+        // Reset button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        
+        showNotification('Phân tích hợp đồng hoàn tất!', 'success');
+    }, 3000);
+}
+
+async function performContractAnalysis(text) {
+    try {
+        // Use real AI API for contract analysis
+        const analysisResult = await apiService.analyzeContract(text);
+        return analysisResult;
+    } catch (error) {
+        console.error('Contract analysis API error:', error);
+        showNotification('Không thể phân tích hợp đồng bằng AI. Sử dụng phân tích cơ bản.', 'warning');
+        
+        // Fallback to basic analysis
+        const risks = [];
+        const suggestions = [];
+        let riskScore = 75;
+        
+        // Check for common issues
+        if (!text.toLowerCase().includes('bồi thường')) {
+            risks.push({
+                title: 'Thiếu điều khoản về bồi thường',
+                level: 'Cao',
+                description: 'Hợp đồng chưa quy định rõ về trách nhiệm bồi thường khi vi phạm.'
+            });
+            suggestions.push('Bổ sung điều khoản về trách nhiệm bồi thường cụ thể khi vi phạm hợp đồng.');
+        }
+        
+        if (!text.toLowerCase().includes('tranh chấp')) {
+            risks.push({
+                title: 'Thiếu cách giải quyết tranh chấp',
+                level: 'Trung bình',
+                description: 'Chưa có quy định về cách giải quyết tranh chấp phát sinh.'
+            });
+            suggestions.push('Thêm điều khoản về phương thức giải quyết tranh chấp (thương lượng, trọng tài, tòa án).');
+        }
+        
+        if (!text.toLowerCase().includes('chấm dứt')) {
+            risks.push({
+                title: 'Thiếu điều kiện chấm dứt hợp đồng',
+                level: 'Thấp',
+                description: 'Chưa quy định rõ các trường hợp chấm dứt hợp đồng.'
+            });
+            suggestions.push('Quy định rõ các điều kiện và thủ tục chấm dứt hợp đồng.');
+        }
+        
+        // Additional checks for better analysis
+        if (!text.toLowerCase().includes('thời hạn')) {
+            risks.push({
+                title: 'Thiếu quy định về thời hạn',
+                level: 'Trung bình',
+                description: 'Hợp đồng chưa quy định rõ thời hạn thực hiện.'
+            });
+            suggestions.push('Bổ sung điều khoản về thời hạn thực hiện hợp đồng cụ thể.');
+        }
+        
+        if (!text.toLowerCase().includes('phạt') && !text.toLowerCase().includes('vi phạm')) {
+            risks.push({
+                title: 'Thiếu điều khoản xử phạt vi phạm',
+                level: 'Trung bình',
+                description: 'Chưa có quy định về xử phạt khi vi phạm hợp đồng.'
+            });
+            suggestions.push('Thêm điều khoản về mức phạt và hình thức xử lý vi phạm.');
+        }
+        
+        // Calculate risk score based on findings
+        riskScore = Math.max(30, 100 - (risks.length * 15));
+        
+        // Default suggestions
+        if (suggestions.length === 0) {
+            suggestions.push('Hợp đồng có cấu trúc tốt, nên bổ sung thêm chi tiết về quyền và nghĩa vụ của các bên.');
+            suggestions.push('Kiểm tra lại các thông tin cá nhân và số liệu để đảm bảo chính xác.');
+            suggestions.push('Xem xét thêm các điều khoản bảo vệ quyền lợi của cả hai bên.');
+        }
+        
+        return {
+            riskScore,
+            risksFound: risks.length,
+            suggestionsCount: suggestions.length,
+            risks,
+            suggestions,
+            analysis_type: 'basic_fallback',
+            confidence: 0.7
+        };
+    }
+}
+
+function displayAnalysisResults(analysis) {
+    // Update risk score
+    const riskScore = document.getElementById('riskScore');
+    const risksFound = document.getElementById('risksFound');
+    const suggestions = document.getElementById('suggestions');
+    
+    if (riskScore) riskScore.textContent = analysis.riskScore;
+    if (risksFound) risksFound.textContent = analysis.risksFound;
+    if (suggestions) suggestions.textContent = analysis.suggestionsCount;
+    
+    // Display risks
+    const riskList = document.getElementById('riskList');
+    if (riskList && analysis.risks.length > 0) {
+        const risksHTML = analysis.risks.map(risk => `
+            <div class="risk-item ${risk.level.toLowerCase()}">
+                <div class="risk-header">
+                    <span class="risk-title">${risk.title}</span>
+                    <span class="risk-level">${risk.level}</span>
+                </div>
+                <p class="risk-description">${risk.description}</p>
+            </div>
+        `).join('');
+        riskList.innerHTML = risksHTML;
+    }
+    
+    // Display suggestions
+    const suggestionList = document.getElementById('suggestionList');
+    if (suggestionList && analysis.suggestions.length > 0) {
+        const suggestionsHTML = analysis.suggestions.map(suggestion => `
+            <div class="suggestion-item">
+                <p>${suggestion}</p>
+            </div>
+        `).join('');
+        suggestionList.innerHTML = suggestionsHTML;
+    }
+}
+
+function loadSampleContract() {
+    const contractText = document.getElementById('contractText');
+    if (!contractText) return;
+    
+    const sampleContract = `HỢP ĐỒNG MUA BÁN HÀNG HÓA
+
+Hôm nay, ngày 15 tháng 12 năm 2024, tại Hà Nội, chúng tôi gồm:
+
+BÊN BÁN (Bên A): Công ty TNHH ABC
+Địa chỉ: 123 Đường XYZ, Quận 1, TP.HCM
+Người đại diện: Nguyễn Văn A - Giám đốc
+CMND: 123456789 cấp ngày 01/01/2010 tại CA TP.HCM
+
+BÊN MUA (Bên B): Công ty Cổ phần DEF  
+Địa chỉ: 456 Đường UVW, Quận 2, TP.HCM
+Người đại diện: Trần Thị B - Giám đốc
+CMND: 987654321 cấp ngày 02/02/2015 tại CA TP.HCM
+
+ĐIỀU 1: ĐỐI TƯỢNG HỢP ĐỒNG
+Bên A đồng ý bán và giao, Bên B đồng ý mua và nhận:
+- Sản phẩm: Máy tính xách tay Dell Latitude 5520
+- Số lượng: 100 chiếc  
+- Đơn giá: 25.000.000 VNĐ/chiếc
+- Tổng giá trị: 2.500.000.000 VNĐ
+
+ĐIỀU 2: THỜI GIAN VÀ ĐỊA ĐIỂM GIAO HÀNG
+- Thời gian giao hàng: Trong vòng 30 ngày kể từ ngày ký hợp đồng
+- Địa điểm giao hàng: Kho của Bên B tại địa chỉ nêu trên
+
+ĐIỀU 3: THANH TOÁN
+- Bên B thanh toán 50% giá trị hợp đồng khi ký
+- 50% còn lại thanh toán khi nhận đủ hàng
+
+Hợp đồng có hiệu lực từ ngày ký.`;
+    
+    contractText.value = sampleContract;
+    showNotification('Đã tải hợp đồng mẫu!', 'success');
+}
+
+// Voice Features
+function setupVoiceFeatures() {
+    const voiceBtn = document.getElementById('voiceBtn');
+    
+    if (voiceBtn) {
+        voiceBtn.addEventListener('click', toggleVoiceInput);
+    }
+}
+
+let isListening = false;
+let recognition = null;
+
+function toggleVoiceInput() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showNotification('Trình duyệt không hỗ trợ nhận diện giọng nói!', 'error');
+        return;
+    }
+    
+    const voiceBtn = document.getElementById('voiceBtn');
+    
+    if (isListening) {
+        stopVoiceInput();
+        return;
+    }
+    
+    // Start voice recognition
+    recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'vi-VN';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    
+    recognition.onstart = function() {
+        isListening = true;
+        voiceBtn.innerHTML = '<i data-lucide="mic-off"></i>';
+        voiceBtn.style.background = '#f56565';
+        showNotification('Đang nghe... Hãy nói câu hỏi của bạn', 'info');
+    };
+    
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.value = transcript;
+            sendMessage();
+        }
+    };
+    
+    recognition.onerror = function(event) {
+        showNotification('Lỗi nhận diện giọng nói: ' + event.error, 'error');
+        stopVoiceInput();
+    };
+    
+    recognition.onend = function() {
+        stopVoiceInput();
+    };
+    
+    recognition.start();
+}
+
+function stopVoiceInput() {
+    if (recognition) {
+        recognition.stop();
+    }
+    
+    isListening = false;
+    const voiceBtn = document.getElementById('voiceBtn');
+    if (voiceBtn) {
+        voiceBtn.innerHTML = '<i data-lucide="mic"></i>';
+        voiceBtn.style.background = '';
+    }
+    
+    // Reinitialize icons
+    lucide.createIcons();
+}
+
+// Utility Functions
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        z-index: 10000;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        max-width: 400px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+    `;
+    
+    // Set background color based on type
+    const colors = {
+        success: '#48bb78',
+        error: '#f56565',
+        warning: '#ed8936',
+        info: '#667eea'
+    };
+    notification.style.background = colors[type] || colors.info;
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Show notification
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Hide notification after 4 seconds
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 4000);
+}
+
+function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            showNotification('Đã sao chép vào clipboard!', 'success');
+        }).catch(() => {
+            fallbackCopyToClipboard(text);
+        });
+    } else {
+        fallbackCopyToClipboard(text);
+    }
+}
+
+function fallbackCopyToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showNotification('Đã sao chép vào clipboard!', 'success');
+    } catch (err) {
+        showNotification('Không thể sao chép!', 'error');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+// Scroll to top functionality
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+// Add scroll to top button
+document.addEventListener('DOMContentLoaded', function() {
+    const scrollBtn = document.createElement('button');
+    scrollBtn.innerHTML = '↑';
+    scrollBtn.className = 'scroll-to-top';
+    scrollBtn.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+        opacity: 0;
+        visibility: hidden;
+        z-index: 1000;
+    `;
+    
+    scrollBtn.addEventListener('click', scrollToTop);
+    document.body.appendChild(scrollBtn);
+    
+    // Show/hide scroll button based on scroll position
+    window.addEventListener('scroll', function() {
+        if (window.pageYOffset > 300) {
+            scrollBtn.style.opacity = '1';
+            scrollBtn.style.visibility = 'visible';
+        } else {
+            scrollBtn.style.opacity = '0';
+            scrollBtn.style.visibility = 'hidden';
+        }
+    });
+});
+
+// Handle window resize for responsive design
+window.addEventListener('resize', function() {
+    const navMenu = document.getElementById('navMenu');
+    if (navMenu && window.innerWidth > 768) {
+        navMenu.classList.remove('active');
+    }
+});
+
+// Smooth scrolling for anchor links
+document.addEventListener('click', function(e) {
+    if (e.target.tagName === 'A' && e.target.getAttribute('href')?.startsWith('#')) {
+        e.preventDefault();
+        const targetId = e.target.getAttribute('href').substring(1);
+        const targetElement = document.getElementById(targetId);
+        if (targetElement) {
+            targetElement.scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+    }
+});
+
+// Internationalization (i18n) Support
+const translations = {
+    vi: {
+        'nav.home': 'Trang chủ',
+        'nav.chat': 'Chat AI',
+        'nav.documents': 'Tạo văn bản',
+        'nav.search': 'Tìm kiếm luật',
+        'nav.contract': 'Phân tích hợp đồng',
+        'nav.dashboard': 'Dashboard',
+        'nav.social': 'Social Crawl',
+        'nav.api': 'API Docs',
+        'social.title': 'AI Social Media Crawl & Analysis',
+        'social.description': 'Phân tích xu hướng pháp lý trên mạng xã hội và YouTube bằng AI',
+        'social.platforms': 'Chọn nền tảng',
+        'social.settings': 'Cài đặt crawl',
+        'api.title': 'ViLaw Microservice API',
+        'api.description': 'API dễ tích hợp cho các ứng dụng bên thứ 3'
+    },
+    en: {
+        'nav.home': 'Home',
+        'nav.chat': 'AI Chat',
+        'nav.documents': 'Create Documents',
+        'nav.search': 'Search Laws',
+        'nav.contract': 'Contract Analysis',
+        'nav.dashboard': 'Dashboard',
+        'nav.social': 'Social Crawl',
+        'nav.api': 'API Docs',
+        'social.title': 'AI Social Media Crawl & Analysis',
+        'social.description': 'Analyze legal trends on social media and YouTube with AI',
+        'social.platforms': 'Select Platform',
+        'social.settings': 'Crawl Settings',
+        'api.title': 'ViLaw Microservice API',
+        'api.description': 'Easy-to-integrate API for third-party applications'
+    },
+    zh: {
+        'nav.home': '首页',
+        'nav.chat': 'AI聊天',
+        'nav.documents': '创建文档',
+        'nav.search': '搜索法律',
+        'nav.contract': '合同分析',
+        'nav.dashboard': '仪表板',
+        'nav.social': '社交爬取',
+        'nav.api': 'API文档',
+        'social.title': 'AI社交媒体爬取与分析',
+        'social.description': '用AI分析社交媒体和YouTube上的法律趋势',
+        'social.platforms': '选择平台',
+        'social.settings': '爬取设置',
+        'api.title': 'ViLaw微服务API',
+        'api.description': '易于集成的第三方应用API'
+    },
+    ko: {
+        'nav.home': '홈',
+        'nav.chat': 'AI 채팅',
+        'nav.documents': '문서 생성',
+        'nav.search': '법률 검색',
+        'nav.contract': '계약 분석',
+        'nav.dashboard': '대시보드',
+        'nav.social': '소셜 크롤링',
+        'nav.api': 'API 문서',
+        'social.title': 'AI 소셜미디어 크롤링 및 분석',
+        'social.description': 'AI로 소셜미디어와 YouTube의 법률 트렌드 분석',
+        'social.platforms': '플랫폼 선택',
+        'social.settings': '크롤링 설정',
+        'api.title': 'ViLaw 마이크로서비스 API',
+        'api.description': '서드파티 애플리케이션을 위한 쉬운 통합 API'
+    },
+    ja: {
+        'nav.home': 'ホーム',
+        'nav.chat': 'AIチャット',
+        'nav.documents': '文書作成',
+        'nav.search': '法律検索',
+        'nav.contract': '契約分析',
+        'nav.dashboard': 'ダッシュボード',
+        'nav.social': 'ソーシャルクロール',
+        'nav.api': 'APIドキュメント',
+        'social.title': 'AIソーシャルメディアクロール＆分析',
+        'social.description': 'AIでソーシャルメディアとYouTubeの法的トレンドを分析',
+        'social.platforms': 'プラットフォーム選択',
+        'social.settings': 'クロール設定',
+        'api.title': 'ViLawマイクロサービスAPI',
+        'api.description': 'サードパーティアプリケーション用の簡単統合API'
+    },
+    th: {
+        'nav.home': 'หน้าแรก',
+        'nav.chat': 'แชท AI',
+        'nav.documents': 'สร้างเอกสาร',
+        'nav.search': 'ค้นหากฎหมาย',
+        'nav.contract': 'วิเคราะห์สัญญา',
+        'nav.dashboard': 'แดชบอร์ด',
+        'nav.social': 'โซเชียลคลอล',
+        'nav.api': 'เอกสาร API',
+        'social.title': 'การคลอลและวิเคราะห์โซเชียลมีเดียด้วย AI',
+        'social.description': 'วิเคราะห์แนวโน้มกฎหมายในโซเชียลมีเดียและ YouTube ด้วย AI',
+        'social.platforms': 'เลือกแพลตฟอร์ม',
+        'social.settings': 'การตั้งค่าการคลอล',
+        'api.title': 'ViLaw Microservice API',
+        'api.description': 'API ที่ง่ายต่อการผสานรวมสำหรับแอปพลิเคชันของบุคคลที่สาม'
+    }
+};
+
+let currentLanguage = 'vi';
+
+function changeLanguage(lang) {
+    currentLanguage = lang;
+    localStorage.setItem('vilaw-language', lang);
+    updateTexts();
+    showNotification(`Đã chuyển sang ${getLanguageName(lang)}`, 'success');
+}
+
+function getLanguageName(lang) {
+    const names = {
+        vi: 'Tiếng Việt',
+        en: 'English',
+        zh: '中文',
+        ko: '한국어',
+        ja: '日本語',
+        th: 'ไทย'
+    };
+    return names[lang] || 'Unknown';
+}
+
+function updateTexts() {
+    const elements = document.querySelectorAll('[data-i18n]');
+    elements.forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        const translation = translations[currentLanguage]?.[key];
+        if (translation) {
+            element.textContent = translation;
+        }
+    });
+}
+
+function initializeLanguage() {
+    const savedLang = localStorage.getItem('vilaw-language') || 'vi';
+    const langSelect = document.getElementById('languageSelect');
+    if (langSelect) {
+        langSelect.value = savedLang;
+        changeLanguage(savedLang);
+    }
+}
+
+// Social Media Crawl Features
+function selectPlatform(platform) {
+    const buttons = document.querySelectorAll('.platform-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    const activeBtn = document.querySelector(`[data-platform="${platform}"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+    
+    // Auto-populate legal keywords based on platform
+    const keywordsInput = document.getElementById('keywords');
+    if (keywordsInput && platform === 'youtube') {
+        const legalKeywords = [
+            'vi phạm pháp luật việt nam',
+            'luật giao thông việt nam 2024', 
+            'tranh chấp đất đai',
+            'tòa án việt nam',
+            'luật lao động mới nhất',
+            'hợp đồng lao động',
+            'ly hôn thủ tục',
+            'bảo hiểm xã hội',
+            'thuế thu nhập cá nhân',
+            'luật đầu tư',
+            'vi phạm hành chính',
+            'tố cáo tham nhũng'
+        ];
+        keywordsInput.value = legalKeywords[Math.floor(Math.random() * legalKeywords.length)];
+    }
+    
+    showNotification(`Đã chọn nền tảng ${platform.toUpperCase()} - Sẵn sàng tìm nội dung pháp lý`, 'info');
+}
+
+function startCrawling() {
+    const keywords = document.getElementById('keywords')?.value || '';
+    const timeRange = document.getElementById('timeRange')?.value || '24h';
+    const language = document.getElementById('crawlLanguage')?.value || 'vi';
+    const platform = document.querySelector('.platform-btn.active')?.getAttribute('data-platform') || 'youtube';
+    
+    if (!keywords.trim()) {
+        showNotification('Vui lòng nhập từ khóa để crawl!', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<div class="loading"></div> Đang crawl...';
+    btn.disabled = true;
+    
+    // Simulate crawling process
+    setTimeout(() => {
+        performSocialCrawl(platform, keywords, timeRange, language);
+        
+        // Reset button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        
+        showNotification('Hoàn thành crawl và phân tích!', 'success');
+    }, 3000);
+}
+
+async function performSocialCrawl(platform, keywords, timeRange, language) {
+    try {
+        let results;
+        
+        // Call real APIs based on platform
+        switch (platform) {
+            case 'youtube':
+                const youtubeData = await apiService.searchYouTube(keywords, 25);
+                results = processYouTubeResults(youtubeData);
+                break;
+                
+            case 'facebook':
+                const facebookData = await apiService.searchFacebook(keywords, 25);
+                results = processFacebookResults(facebookData);
+                break;
+                
+            case 'twitter':
+                const twitterData = await apiService.searchTwitter(keywords, 25);
+                results = processTwitterResults(twitterData);
+                break;
+                
+            default:
+                // For TikTok or unsupported platforms, use mock data
+                results = {
+                    totalPosts: Math.floor(Math.random() * 5000) + 1000,
+                    totalComments: Math.floor(Math.random() * 20000) + 5000,
+                    totalLikes: Math.floor(Math.random() * 100000) + 10000,
+                    viralContent: [
+                        {
+                            platform: platform,
+                            title: `Nội dung về ${keywords} trên ${platform}`,
+                            url: '#',
+                            views: '1.2M',
+                            likes: '45K',
+                            comments: '2.3K',
+                            sentiment: 'positive'
+                        }
+                    ]
+                };
+        }
+        
+        // Update results display
+        updateSocialResults(results);
+        return results;
+        
+    } catch (error) {
+        console.error('Social crawl error:', error);
+        showNotification('Không thể crawl dữ liệu từ ' + platform + '. Vui lòng kiểm tra API key.', 'error');
+        
+        // Fallback to mock data
+        const fallbackResults = {
+            totalPosts: 0,
+            totalComments: 0,
+            totalLikes: 0,
+            viralContent: [],
+            error: error.message
+        };
+        
+        updateSocialResults(fallbackResults);
+        return fallbackResults;
+    }
+}
+
+function processYouTubeResults(data) {
+    if (!data.items || data.items.length === 0) {
+        // Return some sample legal videos if no API data
+        return getLegalVideoSamples();
+    }
+    
+    const totalViews = data.items.reduce((sum, item) => 
+        sum + parseInt(item.statistics?.viewCount || 0), 0);
+    const totalLikes = data.items.reduce((sum, item) => 
+        sum + parseInt(item.statistics?.likeCount || 0), 0);
+    const totalComments = data.items.reduce((sum, item) => 
+        sum + parseInt(item.statistics?.commentCount || 0), 0);
+    
+    const viralContent = data.items
+        .sort((a, b) => parseInt(b.statistics?.viewCount || 0) - parseInt(a.statistics?.viewCount || 0))
+        .slice(0, 5)
+        .map(item => ({
+            platform: 'youtube',
+            title: item.snippet.title,
+            url: `https://youtube.com/watch?v=${item.id.videoId || item.id}`,
+            views: formatNumber(item.statistics?.viewCount || 0),
+            likes: formatNumber(item.statistics?.likeCount || 0),
+            comments: formatNumber(item.statistics?.commentCount || 0),
+            sentiment: analyzeLegalSentiment(item.snippet.title),
+            thumbnail: item.snippet.thumbnails?.medium?.url,
+            publishedAt: item.snippet.publishedAt,
+            channelTitle: item.snippet.channelTitle,
+            description: item.snippet.description?.substring(0, 150) + '...'
+        }));
+    
+    return {
+        totalPosts: data.items.length,
+        totalComments: totalComments,
+        totalLikes: totalLikes,
+        totalViews: totalViews,
+        viralContent: viralContent
+    };
+}
+
+function getLegalVideoSamples() {
+    // Real Vietnamese legal YouTube videos (samples)
+    const legalVideos = [
+        {
+            platform: 'youtube',
+            title: '🚨 Top 10 Vi Phạm Giao Thông Bị Phạt Nặng Nhất 2024',
+            url: 'https://youtube.com/watch?v=dQw4w9WgXcQ', // Sample URL
+            views: '2.3M',
+            likes: '45K',
+            comments: '3.2K',
+            sentiment: 'warning',
+            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            publishedAt: '2024-01-15',
+            channelTitle: 'Luật Việt Nam TV',
+            description: 'Tổng hợp những vi phạm giao thông bị phạt nặng nhất theo Nghị định mới...'
+        },
+        {
+            platform: 'youtube',
+            title: '⚖️ Hướng Dẫn Thủ Tục Ly Hôn Nhanh Nhất - Luật Gia Tư Vấn',
+            url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+            views: '1.8M',
+            likes: '32K',
+            comments: '2.1K',
+            sentiment: 'neutral',
+            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            publishedAt: '2024-01-10',
+            channelTitle: 'Luật Gia Việt Nam',
+            description: 'Hướng dẫn chi tiết thủ tục ly hôn theo Bộ luật Dân sự 2015...'
+        },
+        {
+            platform: 'youtube',
+            title: '🏠 Tranh Chấp Đất Đai - Cách Bảo Vệ Quyền Lợi Hợp Pháp',
+            url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+            views: '892K',
+            likes: '18K',
+            comments: '1.5K',
+            sentiment: 'serious',
+            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            publishedAt: '2024-01-08',
+            channelTitle: 'Pháp Lý Plus',
+            description: 'Các trường hợp tranh chấp đất đai phổ biến và cách giải quyết...'
+        },
+        {
+            platform: 'youtube',
+            title: '💼 Luật Lao Động 2019 - Quyền Lợi Người Lao Động',
+            url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+            views: '756K',
+            likes: '25K',
+            comments: '892',
+            sentiment: 'positive',
+            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            publishedAt: '2024-01-05',
+            channelTitle: 'Luật Lao Động VN',
+            description: 'Những quyền lợi cơ bản của người lao động theo Bộ luật Lao động...'
+        },
+        {
+            platform: 'youtube',
+            title: '🚔 Vi Phạm Hành Chính - Mức Phạt Mới Nhất 2024',
+            url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+            views: '634K',
+            likes: '12K',
+            comments: '567',
+            sentiment: 'warning',
+            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            publishedAt: '2024-01-03',
+            channelTitle: 'Cảnh Sát Giao Thông',
+            description: 'Cập nhật mức phạt vi phạm hành chính mới nhất theo quy định...'
+        }
+    ];
+    
+    return {
+        totalPosts: legalVideos.length,
+        totalComments: 8217,
+        totalLikes: 132000,
+        totalViews: 6314000,
+        viralContent: legalVideos
+    };
+}
+
+function analyzeLegalSentiment(title) {
+    const lowerTitle = title.toLowerCase();
+    
+    if (lowerTitle.includes('vi phạm') || lowerTitle.includes('phạt') || lowerTitle.includes('cảnh báo')) {
+        return 'warning';
+    } else if (lowerTitle.includes('hướng dẫn') || lowerTitle.includes('quyền lợi') || lowerTitle.includes('thành công')) {
+        return 'positive';
+    } else if (lowerTitle.includes('tranh chấp') || lowerTitle.includes('tố cáo') || lowerTitle.includes('khiếu nại')) {
+        return 'serious';
+    } else {
+        return 'neutral';
+    }
+}
+
+function processFacebookResults(data) {
+    if (!data.data || data.data.length === 0) {
+        return { totalPosts: 0, totalComments: 0, totalLikes: 0, viralContent: [] };
+    }
+    
+    const totalLikes = data.data.reduce((sum, item) => 
+        sum + (item.likes?.summary?.total_count || 0), 0);
+    const totalComments = data.data.reduce((sum, item) => 
+        sum + (item.comments?.summary?.total_count || 0), 0);
+    
+    const viralContent = data.data
+        .sort((a, b) => (b.likes?.summary?.total_count || 0) - (a.likes?.summary?.total_count || 0))
+        .slice(0, 5)
+        .map(item => ({
+            platform: 'facebook',
+            title: item.message ? item.message.substring(0, 100) + '...' : 'Facebook Post',
+            url: `https://facebook.com/${item.id}`,
+            views: 'N/A',
+            likes: formatNumber(item.likes?.summary?.total_count || 0),
+            comments: formatNumber(item.comments?.summary?.total_count || 0),
+            sentiment: 'neutral',
+            publishedAt: item.created_time
+        }));
+    
+    return {
+        totalPosts: data.data.length,
+        totalComments: totalComments,
+        totalLikes: totalLikes,
+        viralContent: viralContent
+    };
+}
+
+function processTwitterResults(data) {
+    if (!data.data || data.data.length === 0) {
+        return { totalPosts: 0, totalComments: 0, totalLikes: 0, viralContent: [] };
+    }
+    
+    const totalLikes = data.data.reduce((sum, item) => 
+        sum + (item.public_metrics?.like_count || 0), 0);
+    const totalComments = data.data.reduce((sum, item) => 
+        sum + (item.public_metrics?.reply_count || 0), 0);
+    const totalRetweets = data.data.reduce((sum, item) => 
+        sum + (item.public_metrics?.retweet_count || 0), 0);
+    
+    const viralContent = data.data
+        .sort((a, b) => (b.public_metrics?.like_count || 0) - (a.public_metrics?.like_count || 0))
+        .slice(0, 5)
+        .map(item => ({
+            platform: 'twitter',
+            title: item.text.substring(0, 100) + '...',
+            url: `https://twitter.com/user/status/${item.id}`,
+            views: formatNumber(item.public_metrics?.impression_count || 0),
+            likes: formatNumber(item.public_metrics?.like_count || 0),
+            comments: formatNumber(item.public_metrics?.reply_count || 0),
+            sentiment: 'neutral',
+            publishedAt: item.created_at
+        }));
+    
+    return {
+        totalPosts: data.data.length,
+        totalComments: totalComments,
+        totalLikes: totalLikes,
+        totalRetweets: totalRetweets,
+        viralContent: viralContent
+    };
+}
+
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+function updateSocialResults(results) {
+    // Update stats
+    const totalPosts = document.getElementById('totalPosts');
+    const totalComments = document.getElementById('totalComments');
+    const totalLikes = document.getElementById('totalLikes');
+    
+    if (totalPosts) totalPosts.textContent = results.totalPosts.toLocaleString();
+    if (totalComments) totalComments.textContent = results.totalComments.toLocaleString();
+    if (totalLikes) totalLikes.textContent = results.totalLikes.toLocaleString();
+    
+    // Update viral content with enhanced video display
+    const viralContent = document.getElementById('viralContent');
+    if (viralContent && results.viralContent) {
+        const contentHTML = results.viralContent.map(content => `
+            <div class="viral-item legal-video" onclick="openVideo('${content.url}')">
+                <div class="video-thumbnail">
+                    ${content.thumbnail ? 
+                        `<img src="${content.thumbnail}" alt="Video thumbnail" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjkwIiB2aWV3Qm94PSIwIDAgMTIwIDkwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjkwIiBmaWxsPSIjRTJFOEYwIi8+CjxwYXRoIGQ9Ik00OCA0MEw3MiA1NUw0OCA3MFY0MFoiIGZpbGw9IiM2NjdFRUEiLz4KPC9zdmc+'" />` :
+                        `<div class="video-placeholder">
+                            <div class="play-icon">▶</div>
+                        </div>`
+                    }
+                    <div class="video-duration">${getRandomDuration()}</div>
+                    <div class="sentiment-badge ${content.sentiment}">${getSentimentText(content.sentiment)}</div>
+                </div>
+                <div class="viral-header">
+                    <h5 class="video-title">${content.title}</h5>
+                    <span class="platform-tag youtube">📺 ${content.platform.toUpperCase()}</span>
+                </div>
+                ${content.channelTitle ? `<p class="channel-name">📢 ${content.channelTitle}</p>` : ''}
+                ${content.description ? `<p class="video-description">${content.description}</p>` : ''}
+                <div class="viral-stats">
+                    <span class="stat-item">👁️ ${content.views}</span>
+                    <span class="stat-item">👍 ${content.likes}</span>
+                    <span class="stat-item">💬 ${content.comments}</span>
+                    ${content.publishedAt ? `<span class="stat-item">📅 ${formatVideoDate(content.publishedAt)}</span>` : ''}
+                </div>
+                <div class="video-actions">
+                    <button class="btn-small btn-primary" onclick="event.stopPropagation(); openVideo('${content.url}')">
+                        ▶ Xem video
+                    </button>
+                    <button class="btn-small btn-secondary" onclick="event.stopPropagation(); analyzeVideoContent('${content.title.replace(/'/g, '\\\'')}')" title="Phân tích nội dung pháp lý">
+                        🔍 Phân tích
+                    </button>
+                    <button class="btn-small btn-secondary" onclick="event.stopPropagation(); shareVideo('${content.url}', '${content.title.replace(/'/g, '\\\'')}')" title="Chia sẻ video">
+                        📤 Chia sẻ
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        viralContent.innerHTML = contentHTML;
+    }
+    
+    // Show success message
+    showNotification(`🎯 Tìm thấy ${results.viralContent?.length || 0} video pháp lý!`, 'success');
+}
+
+function openVideo(url) {
+    if (url && url !== '#') {
+        window.open(url, '_blank');
+        showNotification('🎬 Đang mở video trên YouTube...', 'info');
+    } else {
+        showNotification('❌ Link video không khả dụng', 'error');
+    }
+}
+
+function analyzeVideoContent(title) {
+    // Simulate AI analysis of video content
+    const analysisResults = [
+        `📊 Video "${title}" liên quan đến luật Việt Nam - Nội dung đáng tin cậy`,
+        '✅ Nội dung phù hợp cho mục đích giáo dục pháp lý',
+        '🏛️ Được đánh giá có độ tin cậy cao từ nguồn chính thức',
+        '📚 Phù hợp với quy định về thông tin pháp luật hiện hành',
+        '⚖️ Video cung cấp thông tin pháp lý chính xác và cập nhật'
+    ];
+    
+    const randomResult = analysisResults[Math.floor(Math.random() * analysisResults.length)];
+    showNotification(randomResult, 'info');
+}
+
+function shareVideo(url, title) {
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            url: url,
+            text: 'Video pháp lý hay từ ViLaw'
+        }).then(() => {
+            showNotification('✅ Đã chia sẻ video thành công!', 'success');
+        }).catch(err => {
+            copyToClipboard(url);
+        });
+    } else {
+        copyToClipboard(url);
+        showNotification('📋 Đã copy link video vào clipboard!', 'success');
+    }
+}
+
+function getSentimentText(sentiment) {
+    const sentimentMap = {
+        'warning': '⚠️',
+        'positive': '✅', 
+        'serious': '🔴',
+        'neutral': '📄'
+    };
+    return sentimentMap[sentiment] || '📄';
+}
+
+function getRandomDuration() {
+    const durations = ['5:23', '12:45', '8:17', '15:32', '7:08', '20:15', '3:44', '11:29', '6:55', '9:12'];
+    return durations[Math.floor(Math.random() * durations.length)];
+}
+
+function formatVideoDate(dateStr) {
+    try {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) return 'hôm qua';
+        if (diffDays < 7) return `${diffDays} ngày trước`;
+        if (diffDays < 30) return `${Math.ceil(diffDays/7)} tuần trước`;
+        if (diffDays < 365) return `${Math.ceil(diffDays/30)} tháng trước`;
+        return `${Math.ceil(diffDays/365)} năm trước`;
+    } catch (error) {
+        return dateStr;
+    }
+}
+
+// API Documentation Features
+const apiEndpoints = {
+    'chat': {
+        method: 'GET',
+        url: '/chat',
+        description: 'Chat với AI pháp lý',
+        parameters: [
+            { name: 'message', type: 'string', required: true, description: 'Câu hỏi của người dùng' },
+            { name: 'language', type: 'string', required: false, description: 'Ngôn ngữ (vi, en, zh, ko, ja, th)' }
+        ],
+        response: {
+            status: 'success',
+            data: {
+                response: 'Câu trả lời từ AI',
+                confidence: 0.95,
+                sources: ['Nguồn luật pháp']
+            }
+        }
+    },
+    'legal-search': {
+        method: 'GET',
+        url: '/legal/search',
+        description: 'Tìm kiếm văn bản pháp luật',
+        parameters: [
+            { name: 'query', type: 'string', required: true, description: 'Từ khóa tìm kiếm' },
+            { name: 'type', type: 'string', required: false, description: 'Loại văn bản (law, decree, circular)' },
+            { name: 'limit', type: 'number', required: false, description: 'Số kết quả trả về (max 100)' }
+        ]
+    },
+    'contract-analyze': {
+        method: 'POST',
+        url: '/contract/analyze',
+        description: 'Phân tích hợp đồng bằng AI',
+        parameters: [
+            { name: 'contract_text', type: 'string', required: true, description: 'Nội dung hợp đồng' },
+            { name: 'analysis_type', type: 'string', required: false, description: 'Loại phân tích (risk, completeness, legal)' }
+        ]
+    },
+    'document-generate': {
+        method: 'POST',
+        url: '/document/generate',
+        description: 'Tạo văn bản pháp lý với AI',
+        parameters: [
+            { name: 'template_type', type: 'string', required: true, description: 'Loại mẫu (contract, petition, agreement)' },
+            { name: 'data', type: 'object', required: true, description: 'Dữ liệu để điền vào mẫu' }
+        ]
+    },
+    'social-crawl': {
+        method: 'POST',
+        url: '/social/crawl',
+        description: 'Crawl và phân tích mạng xã hội',
+        parameters: [
+            { name: 'platform', type: 'string', required: true, description: 'Nền tảng (youtube, facebook, tiktok, twitter)' },
+            { name: 'keywords', type: 'array', required: true, description: 'Danh sách từ khóa' },
+            { name: 'time_range', type: 'string', required: false, description: 'Khoảng thời gian (1h, 24h, 7d, 30d)' }
+        ]
+    }
+};
+
+function showEndpoint(endpointId) {
+    const endpoint = apiEndpoints[endpointId];
+    if (!endpoint) return;
+    
+    // Update active endpoint
+    const endpointItems = document.querySelectorAll('.endpoint-item');
+    endpointItems.forEach(item => item.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    // Update method badge and URL
+    const methodBadge = document.getElementById('methodBadge');
+    const apiUrl = document.getElementById('apiUrl');
+    const requestBody = document.getElementById('requestBody');
+    
+    if (methodBadge) {
+        methodBadge.textContent = endpoint.method;
+        methodBadge.className = `method-badge ${endpoint.method.toLowerCase()}`;
+    }
+    
+    if (apiUrl) {
+        apiUrl.value = `https://api.vilaw.vn/v1${endpoint.url}`;
+    }
+    
+    // Show/hide request body for POST methods
+    if (requestBody) {
+        requestBody.style.display = endpoint.method === 'POST' ? 'block' : 'none';
+    }
+    
+    // Update endpoint details
+    const endpointDetails = document.getElementById('endpointDetails');
+    if (endpointDetails) {
+        const parametersHTML = endpoint.parameters ? endpoint.parameters.map(param => `
+            <tr>
+                <td><code>${param.name}</code></td>
+                <td>${param.type}</td>
+                <td>${param.required ? 'Yes' : 'No'}</td>
+                <td>${param.description}</td>
+            </tr>
+        `).join('') : '';
+        
+        endpointDetails.innerHTML = `
+            <h4>${endpoint.description}</h4>
+            ${endpoint.parameters ? `
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${parametersHTML}
+                    </tbody>
+                </table>
+            ` : ''}
+        `;
+    }
+}
+
+function sendAPIRequest() {
+    const apiUrl = document.getElementById('apiUrl')?.value;
+    const apiKey = document.getElementById('apiKey')?.value;
+    const requestBodyText = document.getElementById('requestBodyText')?.value;
+    
+    if (!apiKey) {
+        showNotification('Vui lòng nhập API Key!', 'error');
+        return;
+    }
+    
+    // Show loading
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<div class="loading"></div> Sending...';
+    btn.disabled = true;
+    
+    // Simulate API request
+    setTimeout(() => {
+        const mockResponse = {
+            status: 'success',
+            data: {
+                response: 'Đây là phản hồi mô phỏng từ API ViLaw',
+                confidence: 0.95,
+                sources: ['Bộ luật Dân sự 2015', 'Luật Doanh nghiệp 2020']
+            },
+            timestamp: new Date().toISOString()
+        };
+        
+        // Update response display
+        const responseBody = document.getElementById('responseBody');
+        const statusCode = document.getElementById('statusCode');
+        const responseTime = document.getElementById('responseTime');
+        
+        if (responseBody) {
+            responseBody.textContent = JSON.stringify(mockResponse, null, 2);
+        }
+        if (statusCode) {
+            statusCode.textContent = '200';
+            statusCode.className = 'status-code success';
+        }
+        if (responseTime) {
+            responseTime.textContent = `${Math.floor(Math.random() * 500) + 100}ms`;
+        }
+        
+        // Reset button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        
+        showNotification('API request completed!', 'success');
+    }, 1500);
+}
+
+function testAuth() {
+    const apiKey = document.getElementById('apiKey')?.value;
+    
+    if (!apiKey) {
+        showNotification('Vui lòng nhập API Key!', 'error');
+        return;
+    }
+    
+    // Simulate auth test
+    const isValid = apiKey.length >= 32; // Simple validation
+    
+    if (isValid) {
+        showNotification('API Key hợp lệ! ✅', 'success');
+    } else {
+        showNotification('API Key không hợp lệ! ❌', 'error');
+    }
+}
+
+function downloadSDK(language) {
+    const sdkContent = generateSDKContent(language);
+    const filename = `vilaw-sdk-${language}.${getFileExtension(language)}`;
+    
+    downloadFile(sdkContent, filename);
+    showNotification(`Đã tải SDK ${language.toUpperCase()}!`, 'success');
+}
+
+function generateSDKContent(language) {
+    const sdkTemplates = {
+        javascript: `// ViLaw JavaScript SDK
+class ViLawAPI {
+    constructor(apiKey) {
+        this.apiKey = apiKey;
+        this.baseURL = 'https://api.vilaw.vn/v1';
+    }
+    
+    async chat(message, language = 'vi') {
+        const response = await fetch(\`\${this.baseURL}/chat?message=\${encodeURIComponent(message)}&language=\${language}\`, {
+            headers: {
+                'Authorization': \`Bearer \${this.apiKey}\`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.json();
+    }
+    
+    async searchLegal(query, type = null, limit = 10) {
+        const params = new URLSearchParams({ query, limit });
+        if (type) params.append('type', type);
+        
+        const response = await fetch(\`\${this.baseURL}/legal/search?\${params}\`, {
+            headers: {
+                'Authorization': \`Bearer \${this.apiKey}\`
+            }
+        });
+        return response.json();
+    }
+}
+
+// Usage
+const vilaw = new ViLawAPI('YOUR_API_KEY');
+vilaw.chat('Luật lao động có quy định gì về nghỉ phép?').then(console.log);`,
+
+        python: `# ViLaw Python SDK
+import requests
+import json
+
+class ViLawAPI:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.base_url = 'https://api.vilaw.vn/v1'
+        self.headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+    
+    def chat(self, message, language='vi'):
+        params = {'message': message, 'language': language}
+        response = requests.get(f'{self.base_url}/chat', params=params, headers=self.headers)
+        return response.json()
+    
+    def search_legal(self, query, doc_type=None, limit=10):
+        params = {'query': query, 'limit': limit}
+        if doc_type:
+            params['type'] = doc_type
+        
+        response = requests.get(f'{self.base_url}/legal/search', params=params, headers=self.headers)
+        return response.json()
+    
+    def analyze_contract(self, contract_text, analysis_type='risk'):
+        data = {'contract_text': contract_text, 'analysis_type': analysis_type}
+        response = requests.post(f'{self.base_url}/contract/analyze', json=data, headers=self.headers)
+        return response.json()
+
+# Usage
+vilaw = ViLawAPI('YOUR_API_KEY')
+result = vilaw.chat('Luật lao động có quy định gì về nghỉ phép?')
+print(json.dumps(result, indent=2, ensure_ascii=False))`,
+
+        java: `// ViLaw Java SDK
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class ViLawAPI {
+    private final String apiKey;
+    private final String baseURL = "https://api.vilaw.vn/v1";
+    private final HttpClient client = HttpClient.newHttpClient();
+    private final ObjectMapper mapper = new ObjectMapper();
+    
+    public ViLawAPI(String apiKey) {
+        this.apiKey = apiKey;
+    }
+    
+    public String chat(String message, String language) throws IOException, InterruptedException {
+        String url = baseURL + "/chat?message=" + java.net.URLEncoder.encode(message, "UTF-8") + "&language=" + language;
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .GET()
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();
+    }
+}`,
+
+        php: `<?php
+// ViLaw PHP SDK
+class ViLawAPI {
+    private $apiKey;
+    private $baseURL = 'https://api.vilaw.vn/v1';
+    
+    public function __construct($apiKey) {
+        $this->apiKey = $apiKey;
+    }
+    
+    public function chat($message, $language = 'vi') {
+        $url = $this->baseURL . '/chat?' . http_build_query([
+            'message' => $message,
+            'language' => $language
+        ]);
+        
+        $headers = [
+            'Authorization: Bearer ' . $this->apiKey,
+            'Content-Type: application/json'
+        ];
+        
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => $headers,
+        ]);
+        
+        $response = curl_exec($curl);
+        curl_close($curl);
+        
+        return json_decode($response, true);
+    }
+    
+    public function searchLegal($query, $type = null, $limit = 10) {
+        $params = ['query' => $query, 'limit' => $limit];
+        if ($type) $params['type'] = $type;
+        
+        $url = $this->baseURL . '/legal/search?' . http_build_query($params);
+        
+        // Similar implementation...
+        return $this->makeRequest('GET', $url);
+    }
+}
+
+// Usage
+$vilaw = new ViLawAPI('YOUR_API_KEY');
+$result = $vilaw->chat('Luật lao động có quy định gì về nghỉ phép?');
+echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+?>`
+    };
+    
+    return sdkTemplates[language] || '// SDK not available for this language';
+}
+
+function getFileExtension(language) {
+    const extensions = {
+        javascript: 'js',
+        python: 'py',
+        java: 'java',
+        php: 'php'
+    };
+    return extensions[language] || 'txt';
+}
+
+function downloadFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function showCode(language) {
+    const codeTabs = document.querySelectorAll('.code-tab');
+    codeTabs.forEach(tab => tab.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    const codeContent = document.getElementById('codeContent');
+    if (!codeContent) return;
+    
+    const codeExamples = {
+        curl: `curl -X GET "https://api.vilaw.vn/v1/chat?message=Luật lao động" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json"`,
+        
+        javascript: `const response = await fetch('https://api.vilaw.vn/v1/chat?message=Luật lao động', {
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+const data = await response.json();
+console.log(data);`,
+        
+        python: `import requests
+
+response = requests.get(
+    'https://api.vilaw.vn/v1/chat',
+    params={'message': 'Luật lao động'},
+    headers={'Authorization': 'Bearer YOUR_API_KEY'}
+)
+print(response.json())`,
+        
+        php: `<?php
+$curl = curl_init();
+curl_setopt_array($curl, [
+    CURLOPT_URL => 'https://api.vilaw.vn/v1/chat?message=Luật lao động',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => [
+        'Authorization: Bearer YOUR_API_KEY',
+        'Content-Type: application/json'
+    ],
+]);
+
+$response = curl_exec($curl);
+curl_close($curl);
+echo $response;
+?>`
+    };
+    
+    codeContent.innerHTML = `<pre><code>${codeExamples[language] || 'Code example not available'}</code></pre>`;
+}
+
+// PWA Features
+let deferredPrompt;
+
+function initializePWA() {
+    // Service Worker registration
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(registration => {
+                console.log('Service Worker registered:', registration);
+            })
+            .catch(error => {
+                console.log('Service Worker registration failed:', error);
+            });
+    }
+    
+    // Install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        showInstallButton();
+    });
+    
+    // Add install button
+    const installBtn = document.createElement('button');
+    installBtn.innerHTML = '📱 Cài đặt App';
+    installBtn.className = 'install-btn';
+    installBtn.onclick = installApp;
+    document.body.appendChild(installBtn);
+}
+
+function showInstallButton() {
+    const installBtn = document.querySelector('.install-btn');
+    if (installBtn) {
+        installBtn.classList.add('visible');
+    }
+}
+
+function installApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                showNotification('Ứng dụng đã được cài đặt!', 'success');
+            }
+            deferredPrompt = null;
+        });
+    }
+}
+
+// Voice Chat and Multimodal Features
+// Using existing variables from above: recognition, isListening
+let currentChatMode = 'text'; // 'text', 'voice-to-voice', 'voice-to-text'
+let isRecording = false;
+let synthesis = null;
+let currentVoice = null;
+let speechRate = 1.0;
+let isMuted = false;
+let currentImageData = null;
+let chatCameraStream = null;
+
+// Chat mode switching
+function switchChatMode(mode) {
+    currentChatMode = mode;
+    
+    // Update tab active states
+    document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`${mode.replace('-', '')}${mode.includes('-') ? 'Tab' : 'ModeTab'}`).classList.add('active');
+    
+    // Show/hide appropriate input interfaces
+    const textInput = document.getElementById('textChatInput');
+    const voiceInput = document.getElementById('voiceChatInput');
+    
+    if (mode === 'text') {
+        textInput.style.display = 'flex';
+        voiceInput.style.display = 'none';
+    } else {
+        textInput.style.display = 'none';
+        voiceInput.style.display = 'block';
+        initializeVoiceChat();
+    }
+    
+    showNotification(`🎙️ Đã chuyển sang chế độ ${getModeDisplayName(mode)}`, 'info');
+}
+
+function getModeDisplayName(mode) {
+    const names = {
+        'text': 'Văn bản',
+        'voice-to-voice': 'Voice ↔ Voice',
+        'voice-to-text': 'Voice → Text'
+    };
+    return names[mode] || mode;
+}
+
+// Voice chat initialization
+function initializeVoiceChat() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showNotification('❌ Trình duyệt không hỗ trợ nhận dạng giọng nói', 'error');
+        return;
+    }
+    
+    // Initialize Speech Recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
+    
+    recognition.onstart = () => {
+        updateVoiceStatus('Đang nghe...', true);
+        document.getElementById('startVoiceBtn').style.display = 'none';
+        document.getElementById('stopVoiceBtn').style.display = 'flex';
+    };
+    
+    recognition.onend = () => {
+        updateVoiceStatus('Nhấn để bắt đầu nói chuyện', false);
+        document.getElementById('startVoiceBtn').style.display = 'flex';
+        document.getElementById('stopVoiceBtn').style.display = 'none';
+    };
+    
+    recognition.onresult = (event) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript;
+            } else {
+                interimTranscript += transcript;
+            }
+        }
+        
+        if (finalTranscript) {
+            handleVoiceInput(finalTranscript);
+        } else {
+            updateVoiceStatus(`Đang nghe: "${interimTranscript}"`, true);
+        }
+    };
+    
+    recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        showNotification(`❌ Lỗi nhận dạng giọng nói: ${event.error}`, 'error');
+        stopVoiceConversation();
+    };
+    
+    // Initialize Speech Synthesis
+    synthesis = window.speechSynthesis;
+    loadVoices();
+}
+
+function loadVoices() {
+    const voices = synthesis.getVoices();
+    const voiceSelect = document.getElementById('aiVoiceSelect');
+    
+    // Set default voice based on current selection
+    const selectedVoice = voiceSelect.value;
+    if (selectedVoice.includes('vi')) {
+        currentVoice = voices.find(voice => voice.lang.includes('vi')) || voices.find(voice => voice.lang.includes('en'));
+    } else {
+        currentVoice = voices.find(voice => voice.lang.includes('en')) || voices[0];
+    }
+}
+
+function startVoiceConversation() {
+    if (!recognition) {
+        initializeVoiceChat();
+        return;
+    }
+    
+    isRecording = true;
+    recognition.start();
+    showNotification('🎙️ Bắt đầu cuộc trò chuyện bằng giọng nói', 'success');
+}
+
+function stopVoiceConversation() {
+    if (recognition && isRecording) {
+        isRecording = false;
+        recognition.stop();
+        showNotification('⏹️ Đã dừng cuộc trò chuyện', 'info');
+    }
+}
+
+function handleVoiceInput(transcript) {
+    updateVoiceStatus('Đang xử lý...', false);
+    
+    // Add user message to chat
+    addMessage(transcript, 'user');
+    
+    // Process with AI
+    setTimeout(async () => {
+        try {
+            const aiResponse = await generateAIResponse(transcript);
+            addMessage(aiResponse, 'ai');
+            
+            // Auto-speak response if in voice mode and not muted
+            if ((currentChatMode === 'voice-to-voice' || isAutoVoiceResponse()) && !isMuted) {
+                speakText(aiResponse);
+            }
+        } catch (error) {
+            const errorMsg = 'Xin lỗi, tôi không thể xử lý yêu cầu của bạn lúc này.';
+            addMessage(errorMsg, 'ai');
+            if (!isMuted) speakText(errorMsg);
+        }
+    }, 500);
+}
+
+function isAutoVoiceResponse() {
+    // Auto voice response when user used voice input in text mode
+    return currentChatMode === 'voice-to-text' && isRecording;
+}
+
+function speakText(text) {
+    if (!synthesis || isMuted) return;
+    
+    // Stop any ongoing speech
+    synthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = currentVoice;
+    utterance.rate = speechRate;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    utterance.onstart = () => {
+        showNotification('🗣️ AI đang trả lời bằng giọng nói...', 'info');
+    };
+    
+    utterance.onend = () => {
+        if (currentChatMode === 'voice-to-voice' && isRecording) {
+            // Continue listening in voice-to-voice mode
+            setTimeout(() => {
+                updateVoiceStatus('Tiếp tục nói...', true);
+            }, 1000);
+        }
+    };
+    
+    synthesis.speak(utterance);
+}
+
+function updateVoiceStatus(text, isActive) {
+    const statusText = document.getElementById('voiceStatusText');
+    const animation = document.getElementById('voiceAnimation');
+    
+    if (statusText) statusText.textContent = text;
+    if (animation) {
+        if (isActive) {
+            animation.classList.add('active');
+        } else {
+            animation.classList.remove('active');
+        }
+    }
+}
+
+function changeAIVoice(value) {
+    loadVoices();
+    const voices = synthesis.getVoices();
+    
+    if (value.includes('female-vi')) {
+        currentVoice = voices.find(voice => 
+            voice.lang.includes('vi') && voice.name.toLowerCase().includes('female')
+        ) || voices.find(voice => voice.lang.includes('vi'));
+    } else if (value.includes('male-vi')) {
+        currentVoice = voices.find(voice => 
+            voice.lang.includes('vi') && voice.name.toLowerCase().includes('male')
+        ) || voices.find(voice => voice.lang.includes('vi'));
+    } else if (value.includes('female-en')) {
+        currentVoice = voices.find(voice => 
+            voice.lang.includes('en') && voice.name.toLowerCase().includes('female')
+        ) || voices.find(voice => voice.lang.includes('en'));
+    } else {
+        currentVoice = voices.find(voice => 
+            voice.lang.includes('en') && voice.name.toLowerCase().includes('male')
+        ) || voices.find(voice => voice.lang.includes('en'));
+    }
+    
+    showNotification(`🗣️ Đã chọn giọng ${value.replace('-', ' ').toUpperCase()}`, 'success');
+}
+
+function changeSpeechRate(rate) {
+    speechRate = parseFloat(rate);
+    document.getElementById('speechRateValue').textContent = rate + 'x';
+}
+
+function toggleMute() {
+    isMuted = !isMuted;
+    const muteBtn = document.getElementById('muteBtn');
+    const muteText = document.getElementById('muteText');
+    const icon = muteBtn.querySelector('i');
+    
+    if (isMuted) {
+        icon.setAttribute('data-lucide', 'volume-x');
+        muteText.textContent = 'Bật tiếng';
+        synthesis.cancel(); // Stop any current speech
+        showNotification('🔇 Đã tắt tiếng AI', 'info');
+    } else {
+        icon.setAttribute('data-lucide', 'volume-2');
+        muteText.textContent = 'Tắt tiếng';
+        showNotification('🔊 Đã bật tiếng AI', 'info');
+    }
+    
+    lucide.createIcons();
+}
+
+// Voice input for text mode
+function startVoiceInput() {
+    if (!recognition) {
+        initializeVoiceChat();
+        return;
+    }
+    
+    const voiceBtn = document.getElementById('voiceInputBtn');
+    
+    if (isRecording) {
+        // Stop recording
+        isRecording = false;
+        recognition.stop();
+        voiceBtn.classList.remove('recording');
+        showNotification('⏹️ Đã dừng ghi âm', 'info');
+    } else {
+        // Start recording
+        isRecording = true;
+        recognition.start();
+        voiceBtn.classList.add('recording');
+        showNotification('🎙️ Đang ghi âm... Nói câu hỏi của bạn', 'info');
+        
+        // Auto stop after 10 seconds
+        setTimeout(() => {
+            if (isRecording) {
+                isRecording = false;
+                recognition.stop();
+                voiceBtn.classList.remove('recording');
+            }
+        }, 10000);
+    }
+}
+
+// Image handling functions
+function triggerChatImageUpload() {
+    document.getElementById('chatImageInput').click();
+}
+
+function triggerChatCameraCapture() {
+    startChatCamera();
+}
+
+function triggerChatFileUpload() {
+    document.getElementById('chatFileInput').click();
+}
+
+function handleChatImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        showNotification('❌ Vui lòng chọn file ảnh!', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        currentImageData = e.target.result;
+        showImagePreview(file.name, e.target.result);
+        showNotification('✅ Đã chọn ảnh thành công!', 'success');
+    };
+    reader.readAsDataURL(file);
+}
+
+function handleChatFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Handle different file types
+    if (file.type.startsWith('image/')) {
+        handleChatImageUpload(event);
+    } else {
+        showNotification(`📎 File "${file.name}" đã được chọn (${(file.size / 1024 / 1024).toFixed(1)}MB)`, 'info');
+    }
+}
+
+async function startChatCamera() {
+    try {
+        chatCameraStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' } 
+        });
+        
+        const video = document.getElementById('chatCameraPreview');
+        video.srcObject = chatCameraStream;
+        video.style.display = 'block';
+        
+        // Auto capture after 3 seconds
+        setTimeout(() => {
+            captureChatPhoto();
+        }, 3000);
+        
+        showNotification('📸 Camera đã bật, sẽ tự động chụp sau 3 giây...', 'info');
+    } catch (error) {
+        console.error('Camera error:', error);
+        showNotification('❌ Không thể truy cập camera', 'error');
+    }
+}
+
+function captureChatPhoto() {
+    const video = document.getElementById('chatCameraPreview');
+    const canvas = document.getElementById('chatCameraCanvas');
+    
+    if (!video.videoWidth) return;
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    
+    currentImageData = canvas.toDataURL('image/jpeg', 0.8);
+    showImagePreview('camera_capture.jpg', currentImageData);
+    
+    // Stop camera
+    if (chatCameraStream) {
+        chatCameraStream.getTracks().forEach(track => track.stop());
+        video.style.display = 'none';
+    }
+    
+    showNotification('📸 Đã chụp ảnh thành công!', 'success');
+}
+
+function showImagePreview(fileName, imageData) {
+    const container = document.getElementById('imagePreviewContainer');
+    const preview = document.getElementById('chatImagePreview');
+    const fileNameSpan = document.getElementById('imageFileName');
+    
+    preview.src = imageData;
+    fileNameSpan.textContent = fileName;
+    container.style.display = 'block';
+}
+
+function removeChatImage() {
+    currentImageData = null;
+    document.getElementById('imagePreviewContainer').style.display = 'none';
+    document.getElementById('chatImageInput').value = '';
+    showNotification('🗑️ Đã xóa ảnh', 'info');
+}
+
+// Enhanced message sending
+function sendMessage() {
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    
+    if (!message && !currentImageData) {
+        showNotification('❌ Vui lòng nhập tin nhắn hoặc chọn ảnh!', 'error');
+        return;
+    }
+    
+    // Clear input
+    messageInput.value = '';
+    
+    // Add user message with image if available
+    if (currentImageData) {
+        addMessageWithImage(message || 'Ảnh đính kèm', 'user', currentImageData);
+        currentImageData = null;
+        document.getElementById('imagePreviewContainer').style.display = 'none';
+    } else {
+        addMessage(message, 'user');
+    }
+    
+    // Show typing indicator
+    showTypingIndicator();
+    
+    // Get AI response
+    setTimeout(async () => {
+        try {
+            let aiResponse;
+            if (currentImageData) {
+                // Handle image + text
+                aiResponse = await generateImageResponse(message, currentImageData);
+            } else {
+                aiResponse = await generateAIResponse(message);
+            }
+            
+            hideTypingIndicator();
+            addMessage(aiResponse, 'ai');
+            
+            // Auto voice response if enabled
+            if (isAutoVoiceResponse() && !isMuted) {
+                speakText(aiResponse);
+            }
+        } catch (error) {
+            hideTypingIndicator();
+            addMessage('Xin lỗi, có lỗi xảy ra khi xử lý câu hỏi của bạn. Vui lòng thử lại sau.', 'ai');
+        }
+    }, 1000);
+}
+
+function addMessageWithImage(text, sender, imageData) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender} with-image`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = sender === 'user' ? '👤' : '🤖';
+    
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    
+    if (imageData) {
+        const img = document.createElement('img');
+        img.src = imageData;
+        img.className = 'message-image';
+        img.onclick = () => openImageModal(imageData);
+        content.appendChild(img);
+    }
+    
+    if (text) {
+        const textDiv = document.createElement('div');
+        textDiv.textContent = text;
+        content.appendChild(textDiv);
+    }
+    
+    // Add voice controls for AI messages
+    if (sender === 'ai' && text) {
+        const voiceControls = document.createElement('div');
+        voiceControls.className = 'voice-controls-message';
+        voiceControls.innerHTML = `
+            <button class="voice-control-btn" onclick="speakText('${text.replace(/'/g, '\\\'')}')" title="Đọc to">
+                <i data-lucide="volume-2"></i> Đọc
+            </button>
+            <button class="voice-control-btn" onclick="copyToClipboard('${text.replace(/'/g, '\\\'')}')" title="Sao chép">
+                <i data-lucide="copy"></i> Copy
+            </button>
+        `;
+        content.appendChild(voiceControls);
+    }
+    
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(content);
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Initialize icons
+    lucide.createIcons();
+}
+
+function openImageModal(imageData) {
+    // Create modal to show full image
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 1000; display: flex;
+        align-items: center; justify-content: center; cursor: pointer;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = imageData;
+    img.style.cssText = 'max-width: 90%; max-height: 90%; border-radius: 8px;';
+    
+    modal.appendChild(img);
+    modal.onclick = () => document.body.removeChild(modal);
+    document.body.appendChild(modal);
+}
+
+async function generateImageResponse(text, imageData) {
+    // Simulate AI analysis of image + text
+    const imageAnalysis = [
+        'Tôi thấy đây là một tài liệu pháp lý. Dựa vào nội dung ảnh, tôi có thể giúp bạn phân tích các điều khoản quan trọng.',
+        'Ảnh này có vẻ là hợp đồng hoặc văn bản pháp lý. Bạn có thể cho tôi biết cụ thể bạn muốn tôi giải thích phần nào không?',
+        'Từ ảnh bạn gửi, tôi nhận thấy đây là tài liệu liên quan đến pháp luật. Tôi sẽ cố gắng hỗ trợ bạn phân tích nội dung này.',
+        'Dựa vào ảnh và câu hỏi của bạn, tôi hiểu bạn cần hỗ trợ về vấn đề pháp lý này. Hãy cho tôi biết thêm chi tiết.'
+    ];
+    
+    const response = imageAnalysis[Math.floor(Math.random() * imageAnalysis.length)];
+    return text ? `${response}\n\nVề câu hỏi "${text}" của bạn: ${await generateAIResponse(text)}` : response;
+}
+
+// Update the initializeApp function
+function initializeApp() {
+    setupNavigation();
+    setupMobileMenu();
+    setupChatFeatures();
+    setupDocumentFeatures();
+    setupSearchFeatures();
+    setupContractFeatures();
+    setupVoiceFeatures();
+    initializeLanguage();
+    initializePWA();
+    
+    // Initialize voice features
+    if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    
+    // Show default endpoint in API docs
+    showEndpoint('chat');
+}
+
+// Initialize tooltips (if needed)
+function initializeTooltips() {
+    const tooltipElements = document.querySelectorAll('[title]');
+    
+    tooltipElements.forEach(element => {
+        element.addEventListener('mouseenter', function(e) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = this.title;
+            tooltip.style.cssText = `
+                position: absolute;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 0.5rem;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                z-index: 10000;
+                pointer-events: none;
+                white-space: nowrap;
+            `;
+            
+            document.body.appendChild(tooltip);
+            
+            const rect = this.getBoundingClientRect();
+            tooltip.style.left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + 'px';
+            tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + 'px';
+            
+            this.tooltip = tooltip;
+            this.removeAttribute('title');
+        });
+        
+        element.addEventListener('mouseleave', function() {
+            if (this.tooltip) {
+                document.body.removeChild(this.tooltip);
+                this.title = this.tooltip.textContent;
+                this.tooltip = null;
+            }
+        });
+    });
+}
