@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { 
   Search, 
   Filter, 
@@ -34,6 +34,7 @@ import {
   Scale
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 interface User {
@@ -57,6 +58,7 @@ export default function LoginUserPage() {
     confirmPassword: ''
   })
   const [errors, setErrors] = useState<{[key: string]: string}>({})
+  const router = useRouter()
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -103,107 +105,55 @@ export default function LoginUserPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!validateForm()) {
+      return
+    }
+
+    if (!isLogin && formData.password !== formData.confirmPassword) {
+      setErrors(prev => ({ ...prev, confirmPassword: 'Mật khẩu xác nhận không khớp' }))
+      toast.error('Mật khẩu xác nhận không khớp!')
+      return
+    }
+
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      if (isLogin) {
-        // Login logic
-        const deriveNameFromEmail = (email?: string) => {
-          if (!email) return 'User'
-          const local = email.split('@')[0]
-          return local
-            .replace(/[._-]+/g, ' ')
-            .split(' ')
-            .filter(Boolean)
-            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-            .join(' ')
-        }
+    try {
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
+      const payload = isLogin
+        ? { email: formData.email, password: formData.password }
+        : {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            password: formData.password
+          }
 
-        const userData = {
-          name: formData.name || deriveNameFromEmail(formData.email),
-          email: formData.email,
-          level: 'normal' as const,
-          avatar: undefined
-        }
-        
-        // Save to localStorage
-        localStorage.setItem('vilaw_user', JSON.stringify(userData))
-        
-        toast.success('Đăng nhập thành công!')
-        // Redirect to home so the user icon is visible
-        window.location.href = '/'
-      } else {
-        // Register logic
-        if (formData.password !== formData.confirmPassword) {
-          toast.error('Mật khẩu xác nhận không khớp!')
-          setIsLoading(false)
-          return
-        }
-        
-        const deriveNameFromEmail = (email?: string) => {
-          if (!email) return 'User'
-          const local = email.split('@')[0]
-          return local
-            .replace(/[._-]+/g, ' ')
-            .split(' ')
-            .filter(Boolean)
-            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-            .join(' ')
-        }
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include'
+      })
 
-        const userData = {
-          name: formData.name || deriveNameFromEmail(formData.email),
-          email: formData.email,
-          level: 'normal' as const,
-          avatar: undefined
-        }
-        
-        // Save to localStorage
-        localStorage.setItem('vilaw_user', JSON.stringify(userData))
-        
-        toast.success('Đăng ký thành công!')
-        // Redirect to home so the user icon is visible
-        window.location.href = '/'
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        const message = data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.'
+        throw new Error(message)
       }
+
+      toast.success(isLogin ? 'Đăng nhập thành công!' : 'Đăng ký thành công!')
+      router.push('/')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Có lỗi xảy ra. Vui lòng thử lại.'
+      toast.error(message)
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const handleSocialLogin = (provider: 'google' | 'facebook' | 'twitter') => {
-    setIsLoading(true)
-    toast.success(`Đang đăng nhập với ${provider}...`)
-    
-    // Simulate social login
-    setTimeout(() => {
-      setIsLoading(false)
-      
-      // Simulate user data from social login
-      const email = provider === 'google' ? 'user@gmail.com' :
-                    provider === 'facebook' ? 'user@facebook.com' : 'user@twitter.com'
-      const deriveNameFromEmail = (e?: string) => {
-        if (!e) return 'User'
-        const local = e.split('@')[0]
-        return local
-          .replace(/[._-]+/g, ' ')
-          .split(' ')
-          .filter(Boolean)
-          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(' ')
-      }
-      const userData = {
-        name: deriveNameFromEmail(email),
-        email,
-        avatar: null as string | null,
-        level: 'normal' as const
-      }
-      
-      // Save user data to localStorage
-      localStorage.setItem('vilaw_user', JSON.stringify(userData))
-      
-      toast.success(`Đăng nhập thành công với ${provider}!`)
-      window.location.href = '/'
-    }, 2000)
+    toast.error(`Đăng nhập với ${provider} đang được phát triển`)
   }
 
   const handleForgotPassword = () => {

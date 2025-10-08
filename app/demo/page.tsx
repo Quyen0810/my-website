@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   User, 
@@ -21,6 +21,7 @@ export default function DemoPage() {
       level: 'normal' as const,
       name: 'Nguyễn Văn A',
       email: 'user@example.com',
+      password: 'user123',
       description: 'Người dùng cơ bản',
       features: ['Truy cập cơ bản', 'Tìm kiếm văn bản', 'Chat AI cơ bản']
     },
@@ -28,6 +29,7 @@ export default function DemoPage() {
       level: 'pro' as const,
       name: 'Trần Thị B',
       email: 'pro@example.com',
+      password: 'pro123',
       description: 'Người dùng cao cấp',
       features: ['Tất cả tính năng Normal', 'Phân tích hợp đồng', 'Soạn thảo văn bản', 'Hỗ trợ ưu tiên']
     },
@@ -35,36 +37,76 @@ export default function DemoPage() {
       level: 'admin' as const,
       name: 'Admin ViLaw',
       email: 'admin@vilaw.com',
+      password: 'admin123',
       description: 'Quản trị viên hệ thống',
       features: ['Tất cả tính năng Pro', 'Quản lý hệ thống', 'Báo cáo chi tiết', 'Quản lý người dùng']
     }
   ]
 
-  const setDemoUser = (level: 'normal' | 'pro' | 'admin') => {
-    const user = demoUsers.find(u => u.level === level)
-    if (user) {
-      const userData = {
-        name: user.name,
-        email: user.email,
-        level: level,
-        avatar: undefined
+  useEffect(() => {
+    let isMounted = true
+
+    const loadSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session', { credentials: 'include' })
+        if (!isMounted) return
+        if (response.ok) {
+          const data = await response.json()
+          setCurrentLevel(data.user.level)
+        }
+      } catch (error) {
+        console.error('Không thể lấy thông tin phiên', error)
       }
-      localStorage.setItem('vilaw_user', JSON.stringify(userData))
+    }
+
+    loadSession()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const setDemoUser = async (level: 'normal' | 'pro' | 'admin') => {
+    const user = demoUsers.find(u => u.level === level)
+    if (!user) return
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, password: user.password }),
+        credentials: 'include'
+      })
+
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        const message = data?.message || 'Không thể đăng nhập tài khoản demo'
+        throw new Error(message)
+      }
+
       setCurrentLevel(level)
       toast.success(`Đã chuyển sang ${user.name} (${level})`)
-      // Reload page to show user icon
       setTimeout(() => {
         window.location.reload()
-      }, 1000)
+      }, 800)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Không thể đăng nhập tài khoản demo'
+      toast.error(message)
     }
   }
 
-  const clearUser = () => {
-    localStorage.removeItem('vilaw_user')
-    toast.success('Đã xóa thông tin người dùng')
-    setTimeout(() => {
-      window.location.reload()
-    }, 1000)
+  const clearUser = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+      toast.success('Đã xóa thông tin người dùng')
+      setTimeout(() => {
+        window.location.reload()
+      }, 800)
+    } catch (error) {
+      console.error('Không thể đăng xuất demo', error)
+      toast.error('Không thể xóa thông tin. Vui lòng thử lại.')
+    }
   }
 
   return (

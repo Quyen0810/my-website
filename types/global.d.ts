@@ -1,5 +1,8 @@
 // Global type declarations for ViLaw
 
+import type { SessionRecord } from '@/lib/auth/sessionStore'
+import type { StoredUser } from '@/lib/auth/userStore'
+
 declare global {
   interface Window {
     apiService: any
@@ -8,6 +11,9 @@ declare global {
     RATE_LIMITS: any
     ERROR_CONFIG: any
   }
+
+  var __VILAW_SESSION_STORE: Map<string, SessionRecord> | undefined
+  var __VILAW_USER_STORE: Map<string, StoredUser> | undefined
 }
 
 export {}

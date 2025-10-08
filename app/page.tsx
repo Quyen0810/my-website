@@ -145,10 +145,26 @@ export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('vilaw_user')
-      setIsLoggedIn(!!saved)
-    } catch {}
+    let isMounted = true
+
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session', { credentials: 'include' })
+        if (!isMounted) return
+        setIsLoggedIn(response.ok)
+      } catch (error) {
+        console.error('Unable to determine session', error)
+        if (isMounted) {
+          setIsLoggedIn(false)
+        }
+      }
+    }
+
+    checkSession()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   return (
