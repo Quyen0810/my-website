@@ -158,7 +158,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-xl overflow-hidden shadow-soft">
+              <div className="w-12 h-12 rounded-xl overflow-hidden">
                 <Image src={logoImg} alt="ViLaw" width={48} height={48} className="object-cover w-full h-full" />
               </div>
               <div>
@@ -251,7 +251,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <div className="flex items-center justify-center w-16 h-16 bg-blue-50 rounded-xl mx-auto mb-4 shadow-soft">
+                <div className="flex items-center justify-center w-16 h-16 bg-blue-50 rounded-xl mx-auto mb-4">
                   <div className="text-blue-600">{stat.icon}</div>
                 </div>
                 <div className="text-3xl font-bold text-slate-900 mb-2">{stat.value}</div>
@@ -283,7 +283,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center mb-6 shadow-soft">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center mb-6">
                   <div className="text-white">{feature.icon}</div>
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900 mb-3">{feature.title}</h3>
@@ -386,7 +386,7 @@ export default function HomePage() {
               >
                 {pkg.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-soft">
+                    <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium">
                       Phổ biến
                     </span>
                   </div>
@@ -445,7 +445,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-soft">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
                   <Scale className="w-6 h-6 text-white" />
                 </div>
                 <div>
