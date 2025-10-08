@@ -143,9 +143,6 @@ const stats = [
 
 export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  // Palette (provided): EFF2F0 (bg), 76819B (accent), 76BA53 (primary), 19253F (dark), 9B9CAA (muted)
-  const [primaryColor] = useState<string>('#76BA53')
-  const [accentColor] = useState<string>('#76819B')
 
   useEffect(() => {
     try {
@@ -154,65 +151,35 @@ export default function HomePage() {
     } catch {}
   }, [])
 
-  function toRgba(color: string, alpha: number): string {
-    // Accepts hex (#RRGGBB) or rgb(...)
-    if (color.startsWith('#')) {
-      const bigint = parseInt(color.slice(1), 16)
-      const r = (bigint >> 16) & 255
-      const g = (bigint >> 8) & 255
-      const b = bigint & 255
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`
-    }
-    if (color.startsWith('rgb(')) {
-      const m = color.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
-      if (m) {
-        const r = parseInt(m[1], 10), g = parseInt(m[2], 10), b = parseInt(m[3], 10)
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`
-      }
-    }
-    return color
-  }
-
-  // Apply provided palette to :root
-  useEffect(() => {
-    const root = document.documentElement
-    root.style.setProperty('--primary', '#76BA53')
-    root.style.setProperty('--accent', '#76819B')
-    root.style.setProperty('--dark', '#19253F')
-    root.style.setProperty('--muted', '#9B9CAA')
-    root.style.setProperty('--primary-rgba-08', toRgba('#76BA53', 0.08))
-    root.style.setProperty('--accent-rgba-08', toRgba('#76819B', 0.08))
-    root.style.setProperty('--primary-rgba-18', toRgba('#76BA53', 0.18))
-  }, [])
-
-  // Thanh toán được xử lý tại trang /payment
   return (
-    <div className="min-h-screen bg-gradient-to-br theme-bg">
+    <div className="min-h-screen bg-hero">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+      <header className="glass-effect sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-20 h-20 rounded-2xl overflow-hidden border border-primary-soft shadow-sm">
-                <Image src={logoImg} alt="ViLaw" width={80} height={80} className="object-cover w-full h-full transform scale-150" />
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-xl overflow-hidden shadow-soft">
+                <Image src={logoImg} alt="ViLaw" width={48} height={48} className="object-cover w-full h-full" />
               </div>
               <div>
+                <h1 className="text-xl font-bold text-slate-900">ViLaw</h1>
+                <p className="text-sm text-slate-600">Nền tảng Pháp lý Số</p>
               </div>
             </div>
             
             <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/legal" className="text-gray-600 hover:text-primary-600 transition-colors">Văn bản</Link>
-              <Link href="/chat" className="text-gray-600 hover:text-primary-600 transition-colors">Chat AI</Link>
-              <Link href="/documents" className="text-gray-600 hover:text-primary-600 transition-colors">Soạn thảo</Link>
-              <Link href="/contract" className="text-gray-600 hover:text-primary-600 transition-colors">Hợp đồng</Link>
-              <Link href="/dashboard" className="text-gray-600 hover:text-primary-600 transition-colors">Admin</Link>
+              <Link href="/legal" className="nav-link">Văn bản</Link>
+              <Link href="/chat" className="nav-link">Chat AI</Link>
+              <Link href="/documents" className="nav-link">Soạn thảo</Link>
+              <Link href="/contract" className="nav-link">Hợp đồng</Link>
+              <Link href="/dashboard" className="nav-link">Admin</Link>
             </nav>
 
             <div className="flex items-center space-x-4">
               {isLoggedIn ? (
                 <UserIcon mode="inline" />
               ) : (
-                <Link href="/loginuser" className="text-gray-600 hover:text-primary-600 transition-colors">
+                <Link href="/loginuser" className="btn-ghost">
                   Đăng nhập
                 </Link>
               )}
@@ -222,23 +189,23 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <section className="relative overflow-hidden py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <motion.h1 
-              className="text-5xl md:text-7xl font-bold text-gray-900 mb-6"
+              className="text-5xl md:text-6xl font-bold text-slate-900 mb-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
               Nền tảng{' '}
-              <span className="text-gradient-dynamic">Pháp lý Số</span>
+              <span className="text-gradient">Pháp lý Số</span>
               <br />
               Toàn Dân
             </motion.h1>
             
             <motion.p 
-              className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto"
+              className="text-xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -253,11 +220,11 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
-              <Link href="/chat" className="text-lg px-8 py-4 rounded-lg btn-dynamic-primary">
+              <Link href="/chat" className="btn-primary inline-flex items-center">
                 <Play className="w-5 h-5 mr-2" />
                 Bắt đầu ngay
               </Link>
-              <Link href="/legal" className="text-lg px-8 py-4 rounded-lg btn-outline-dynamic">
+              <Link href="/legal" className="btn-outline inline-flex items-center">
                 <Search className="w-5 h-5 mr-2" />
                 Khám phá văn bản
               </Link>
@@ -265,16 +232,15 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Background Elements */}
+        {/* Subtle Background Elements */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-20 left-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob bg-primary-dynamic opacity-50"></div>
-          <div className="absolute top-40 right-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000 bg-accent-dynamic opacity-50"></div>
-          <div className="absolute -bottom-8 left-20 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000 bg-primary-dynamic opacity-35"></div>
+          <div className="absolute top-20 left-10 w-96 h-96 rounded-full bg-blue-100 opacity-30 animate-float"></div>
+          <div className="absolute top-40 right-10 w-80 h-80 rounded-full bg-slate-100 opacity-40 animate-float animation-delay-200"></div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-white">
+      <section className="py-20 bg-section">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -285,11 +251,11 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <div className="flex items-center justify-center w-12 h-12 bg-primary-100 rounded-lg mx-auto mb-4">
-                  <div className="text-primary-600">{stat.icon}</div>
+                <div className="flex items-center justify-center w-16 h-16 bg-blue-50 rounded-xl mx-auto mb-4 shadow-soft">
+                  <div className="text-blue-600">{stat.icon}</div>
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
-                <div className="text-gray-600">{stat.label}</div>
+                <div className="text-3xl font-bold text-slate-900 mb-2">{stat.value}</div>
+                <div className="text-slate-600 font-medium">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -297,13 +263,13 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-section-alt">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">
               Tính năng Nổi bật
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               Nền tảng pháp lý số tích hợp AI, blockchain và dữ liệu mở
             </p>
           </div>
@@ -312,16 +278,16 @@ export default function HomePage() {
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                className="card group hover:shadow-medium transition-all duration-300"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 chip-gradient">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center mb-6 shadow-soft">
                   <div className="text-white">{feature.icon}</div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">{feature.title}</h3>
+                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -329,62 +295,62 @@ export default function HomePage() {
       </section>
 
       {/* Test System Card */}
-      <section className="py-16">
+      <section className="py-20 bg-section">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
-            className="bg-gradient-to-r from-primary-50 via-accent-50 to-legal-50 rounded-2xl p-8 shadow-lg border border-primary-100"
+            className="card-elevated bg-gradient-to-r from-blue-50 to-slate-50"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6 }}
           >
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">
                 Test hệ thống ngay
               </h2>
-              <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+              <p className="text-lg text-slate-600 mb-12 max-w-2xl mx-auto">
                 Trải nghiệm các tính năng AI-powered của ViLaw với dữ liệu mẫu
               </p>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Link href="/legal" className="card hover:shadow-lg transition-shadow group">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <SearchIcon className="w-5 h-5 text-primary-600" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <Link href="/legal" className="card hover:shadow-medium transition-all duration-300 group">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                      <SearchIcon className="w-6 h-6 text-blue-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Duyệt văn bản</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">Duyệt văn bản</h3>
                   </div>
-                  <p className="text-gray-600 mb-4">Tìm kiếm và lọc văn bản pháp luật với AI</p>
-                  <div className="flex items-center text-primary-600 group-hover:text-primary-700">
-                    <span className="text-sm font-medium">Thử ngay</span>
-                    <ArrowRight className="w-4 h-4 ml-1" />
+                  <p className="text-slate-600 mb-6">Tìm kiếm và lọc văn bản pháp luật với AI</p>
+                  <div className="flex items-center text-blue-600 group-hover:text-blue-700 font-medium">
+                    <span>Thử ngay</span>
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </div>
                 </Link>
 
-                <Link href="/chat" className="card hover:shadow-lg transition-shadow group">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center">
-                      <MessageSquare className="w-5 h-5 text-accent-600" />
+                <Link href="/chat" className="card hover:shadow-medium transition-all duration-300 group">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
+                      <MessageSquare className="w-6 h-6 text-slate-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Chat AI</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">Chat AI</h3>
                   </div>
-                  <p className="text-gray-600 mb-4">Trò chuyện với trợ lý pháp lý AI</p>
-                  <div className="flex items-center text-accent-600 group-hover:text-accent-700">
-                    <span className="text-sm font-medium">Thử ngay</span>
-                    <ArrowRight className="w-4 h-4 ml-1" />
+                  <p className="text-slate-600 mb-6">Trò chuyện với trợ lý pháp lý AI</p>
+                  <div className="flex items-center text-slate-600 group-hover:text-slate-700 font-medium">
+                    <span>Thử ngay</span>
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </div>
                 </Link>
 
-                <Link href="/documents" className="card hover:shadow-lg transition-shadow group">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-legal-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-legal-600" />
+                <Link href="/documents" className="card hover:shadow-medium transition-all duration-300 group">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-blue-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Soạn thảo</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">Soạn thảo</h3>
                   </div>
-                  <p className="text-gray-600 mb-4">Tạo văn bản pháp lý với AI assistance</p>
-                  <div className="flex items-center text-legal-600 group-hover:text-legal-700">
-                    <span className="text-sm font-medium">Thử ngay</span>
-                    <ArrowRight className="w-4 h-4 ml-1" />
+                  <p className="text-slate-600 mb-6">Tạo văn bản pháp lý với AI assistance</p>
+                  <div className="flex items-center text-blue-600 group-hover:text-blue-700 font-medium">
+                    <span>Thử ngay</span>
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </div>
                 </Link>
               </div>
@@ -394,13 +360,13 @@ export default function HomePage() {
       </section>
 
       {/* Packages Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-section-alt">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">
               Gói Dịch vụ
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               Lựa chọn gói phù hợp với nhu cầu của bạn
             </p>
           </div>
@@ -409,37 +375,37 @@ export default function HomePage() {
             {packages.map((pkg, index) => (
               <motion.div
                 key={pkg.name}
-                className={`relative bg-white rounded-xl p-8 shadow-sm border-2 ${
+                className={`relative card-elevated ${
                   pkg.popular 
-                    ? 'border-primary-200 shadow-lg' 
-                    : 'border-gray-200'
+                    ? 'border-blue-200 shadow-medium' 
+                    : ''
                 }`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
                 {pkg.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-primary-600 text-white px-4 py-1 rounded-full text-sm font-medium">
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-soft">
                       Phổ biến
                     </span>
                   </div>
                 )}
                 
-                <div className="text-center mb-6">
-                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-${pkg.color} bg-opacity-10 text-${pkg.color} mb-4`}>
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-50 text-blue-600 mb-6">
                     {pkg.badge}
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{pkg.name}</h3>
-                  <div className="text-4xl font-bold text-gray-900 mb-1">{pkg.price}</div>
-                  <p className="text-gray-600">/ tháng</p>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">{pkg.name}</h3>
+                  <div className="text-4xl font-bold text-slate-900 mb-1">{pkg.price}</div>
+                  <p className="text-slate-600">/ tháng</p>
                 </div>
 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-4 mb-8">
                   {pkg.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                      <span className="text-gray-700">{feature}</span>
+                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-slate-700">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -447,10 +413,10 @@ export default function HomePage() {
                 {pkg.price === 'Miễn phí' ? (
                   <Link 
                     href="/loginuser" 
-                    className={`w-full py-3 px-6 rounded-lg font-medium text-center transition-colors ${
+                    className={`w-full py-3 px-6 rounded-lg font-medium text-center transition-all duration-200 ${
                       pkg.popular
-                        ? 'bg-primary-600 text-white hover:bg-primary-700'
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                        ? 'btn-primary'
+                        : 'btn-secondary'
                     }`}
                   >
                     Sử dụng miễn phí
@@ -458,10 +424,10 @@ export default function HomePage() {
                 ) : (
                   <Link
                     href={`/payment?pkg=${pkg.name}`}
-                    className={`w-full py-3 px-6 rounded-lg font-medium text-center transition-colors ${
+                    className={`w-full py-3 px-6 rounded-lg font-medium text-center transition-all duration-200 ${
                       pkg.popular
-                        ? 'bg-primary-600 text-white hover:bg-primary-700'
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                        ? 'btn-primary'
+                        : 'btn-secondary'
                     }`}
                   >
                     Thanh toán bằng ví
@@ -474,27 +440,27 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-slate-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-accent-500 rounded-lg flex items-center justify-center">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-soft">
                   <Scale className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">ViLaw</h3>
-                  <p className="text-sm text-gray-400">Nền tảng Pháp lý Số</p>
+                  <p className="text-sm text-slate-400">Nền tảng Pháp lý Số</p>
                 </div>
               </div>
-              <p className="text-gray-400">
+              <p className="text-slate-400 leading-relaxed">
                 Mỗi công dân – Một trợ lý pháp lý AI
               </p>
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold mb-4">Sản phẩm</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="text-lg font-semibold mb-6 text-white">Sản phẩm</h4>
+              <ul className="space-y-3 text-slate-400">
                 <li><Link href="/legal" className="hover:text-white transition-colors">Văn bản pháp luật</Link></li>
                 <li><Link href="/chat" className="hover:text-white transition-colors">Chat AI</Link></li>
                 <li><Link href="/documents" className="hover:text-white transition-colors">Soạn thảo</Link></li>
@@ -503,8 +469,8 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold mb-4">Hỗ trợ</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="text-lg font-semibold mb-6 text-white">Hỗ trợ</h4>
+              <ul className="space-y-3 text-slate-400">
                 <li><Link href="#" className="hover:text-white transition-colors">Tài liệu</Link></li>
                 <li><Link href="#" className="hover:text-white transition-colors">API</Link></li>
                 <li><Link href="#" className="hover:text-white transition-colors">Liên hệ</Link></li>
@@ -513,8 +479,8 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold mb-4">Công ty</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="text-lg font-semibold mb-6 text-white">Công ty</h4>
+              <ul className="space-y-3 text-slate-400">
                 <li><Link href="#" className="hover:text-white transition-colors">Về chúng tôi</Link></li>
                 <li><Link href="#" className="hover:text-white transition-colors">Tuyển dụng</Link></li>
                 <li><Link href="#" className="hover:text-white transition-colors">Bảo mật</Link></li>
@@ -523,7 +489,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+          <div className="border-t border-slate-800 mt-12 pt-8 text-center text-slate-400">
             <p>&copy; 2024 ViLaw. Tất cả quyền được bảo lưu.</p>
           </div>
         </div>
