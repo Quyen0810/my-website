@@ -1,4 +1,6 @@
 // Global type declarations for ViLaw
+import { SessionRecord } from '@/lib/auth/sessionStore'
+import { StoredUser } from '@/lib/auth/userStore'
 
 import type { SessionRecord } from '@/lib/auth/sessionStore'
 import type { StoredUser } from '@/lib/auth/userStore'
@@ -6,8 +8,6 @@ import type { StoredUser } from '@/lib/auth/userStore'
 declare global {
   interface Window {
     apiService: any
-    legalCrawler: any
-    API_CONFIG: any
     RATE_LIMITS: any
     ERROR_CONFIG: any
   }

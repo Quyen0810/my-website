@@ -193,9 +193,20 @@ export default function HomePage() {
 
             <div className="flex items-center space-x-4">
               {isLoggedIn ? (
-                <UserIcon mode="inline" />
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/session', { method: 'DELETE' })
+                      localStorage.removeItem('vilaw_user')
+                      window.location.reload()
+                    } catch {}
+                  }}
+                  className="btn-ghost"
+                >
+                  Đăng xuất
+                </button>
               ) : (
-                <Link href="/loginuser" className="btn-ghost">
+                <Link href="/login" className="btn-ghost">
                   Đăng nhập
                 </Link>
               )}
@@ -428,7 +439,7 @@ export default function HomePage() {
 
                 {pkg.price === 'Miễn phí' ? (
                   <Link 
-                    href="/loginuser" 
+                    href="/login" 
                     className={`w-full py-3 px-6 rounded-lg font-medium text-center transition-all duration-200 ${
                       pkg.popular
                         ? 'btn-primary'
