@@ -1,87 +1,72 @@
-export interface Session {
+import { randomBytes } from 'crypto'
+
+export type SessionRecord = {
   id: string
   userId: string
-  createdAt: Date
-  expiresAt: Date
+  createdAt: number
+  expiresAt: number
 }
 
-export const SESSION_MAX_AGE = 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+type GlobalWithSessionStore = typeof globalThis & {
+  __VILAW_SESSION_STORE?: Map<string, SessionRecord>
+}
 
-// In-memory session store (replace with database in production)
-const sessions: Session[] = []
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+export const SESSION_MAX_AGE = Math.floor(SESSION_TTL_MS / 1000)
 
-export function createSession(userId: string): Session {
-  const id = generateSessionId()
-  const now = new Date()
-  const expiresAt = new Date(now.getTime() + SESSION_MAX_AGE)
+const globalWithStore = globalThis as GlobalWithSessionStore
 
-  const session: Session = {
+if (!globalWithStore.__VILAW_SESSION_STORE) {
+  globalWithStore.__VILAW_SESSION_STORE = new Map<string, SessionRecord>()
+}
+
+const sessionStore = globalWithStore.__VILAW_SESSION_STORE
+
+export function createSession(userId: string): SessionRecord {
+  const id = randomBytes(24).toString('hex')
+  const record: SessionRecord = {
     id,
     userId,
-    createdAt: now,
-    expiresAt
+    createdAt: Date.now(),
+    expiresAt: Date.now() + SESSION_TTL_MS
   }
 
-  sessions.push(session)
-  return session
+  sessionStore.set(id, record)
+  return record
 }
 
-export function findSession(sessionId: string): Session | null {
-  const session = sessions.find(s => s.id === sessionId)
-  
-  if (!session) {
+export function getSession(sessionId?: string | null): SessionRecord | null {
+  if (!sessionId) {
     return null
   }
 
-  // Check if session is expired
-  if (session.expiresAt < new Date()) {
-    deleteSession(sessionId)
+  const record = sessionStore.get(sessionId) || null
+  if (!record) {
     return null
   }
 
-  return session
-}
-
-// Alias for compatibility
-export const getSession = findSession
-
-export function touchSession(sessionId: string): boolean {
-  const session = findSession(sessionId)
-  if (session) {
-    // Update expiresAt to extend session
-    session.expiresAt = new Date(Date.now() + SESSION_MAX_AGE)
-    return true
+  if (record.expiresAt < Date.now()) {
+    sessionStore.delete(sessionId)
+    return null
   }
-  return false
+
+  return record
 }
 
-export function deleteSession(sessionId: string): boolean {
-  const index = sessions.findIndex(s => s.id === sessionId)
-  if (index !== -1) {
-    sessions.splice(index, 1)
-    return true
+export function deleteSession(sessionId?: string | null) {
+  if (!sessionId) {
+    return
   }
-  return false
+
+  sessionStore.delete(sessionId)
 }
 
-export function deleteUserSessions(userId: string): void {
-  const userSessions = sessions.filter(s => s.userId === userId)
-  userSessions.forEach(session => deleteSession(session.id))
-}
+export function touchSession(sessionId: string) {
+  const record = sessionStore.get(sessionId)
+  if (!record) {
+    return
+  }
 
-// Clean up expired sessions periodically
-export function cleanupExpiredSessions(): void {
-  const now = new Date()
-  sessions.forEach(session => {
-    if (session.expiresAt < now) {
-      deleteSession(session.id)
-    }
-  })
+  record.expiresAt = Date.now() + SESSION_TTL_MS
+  sessionStore.set(sessionId, record)
 }
-
-function generateSessionId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36)
-}
-
-// Run cleanup every hour
-setInterval(cleanupExpiredSessions, 60 * 60 * 1000)

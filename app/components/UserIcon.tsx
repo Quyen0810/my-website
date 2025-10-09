@@ -48,35 +48,36 @@ export default function UserIcon({ mode = 'floating' }: UserIconProps) {
 
     const fetchSession = async () => {
       try {
-      const response = await fetch('/api/auth/session', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
-      })
+        const response = await fetch('/api/auth/session', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        })
 
-      if (!isMounted) return
+        if (!isMounted) return
 
-      if (response.ok) {
-        const data: SessionResponse = await response.json()
-        setUser(data.user)
-        setIsLoggedIn(true)
-      } else {
-        setUser(null)
-        setIsLoggedIn(false)
-      }
-    } catch (error) {
-      console.error('Unable to fetch session', error)
-      if (isMounted) {
-        setUser(null)
-        setIsLoggedIn(false)
+        if (response.ok) {
+          const data: SessionResponse = await response.json()
+          setUser(data.user)
+          setIsLoggedIn(true)
+        } else {
+          setUser(null)
+          setIsLoggedIn(false)
+        }
+      } catch (error) {
+        console.error('Unable to fetch session', error)
+        if (isMounted) {
+          setUser(null)
+          setIsLoggedIn(false)
+        }
       }
     }
-  }
-  fetchSession()
 
-  return () => {
-    isMounted = false
-  }
+    fetchSession()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const deriveNameFromEmail = (email?: string) => {
@@ -90,12 +91,23 @@ export default function UserIcon({ mode = 'floating' }: UserIconProps) {
       .join(' ')
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('vilaw_user')
-    setUser(null)
-    setIsLoggedIn(false)
-    setShowPopup(false)
-    toast.success('Đã đăng xuất thành công!')
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      if (!response.ok) {
+        throw new Error('Không thể đăng xuất')
+      }
+      setUser(null)
+      setIsLoggedIn(false)
+      setShowPopup(false)
+      toast.success('Đã đăng xuất thành công!')
+    } catch (error) {
+      console.error('Logout error:', error)
+      toast.error('Không thể đăng xuất. Vui lòng thử lại.')
+    }
   }
 
   const handleClick = () => {
@@ -131,11 +143,10 @@ export default function UserIcon({ mode = 'floating' }: UserIconProps) {
     const currentIndex = levels.indexOf(user.level)
     const nextLevel = levels[(currentIndex + 1) % levels.length]
     
-    const updatedUser: UserData = { 
-      ...user, 
-      level: nextLevel as 'normal' | 'pro' | 'admin' 
+    const updatedUser: UserData = {
+      ...user,
+      level: nextLevel as 'normal' | 'pro' | 'admin'
     }
-    localStorage.setItem('vilaw_user', JSON.stringify(updatedUser))
     setUser(updatedUser)
     toast.success(`Đã chuyển sang ${getLevelText(nextLevel)}`)
   }

@@ -66,27 +66,28 @@ if (userStore.size === 0) {
 
 export function findUserByEmail(email: string): StoredUser | undefined {
   const normalized = email.toLowerCase()
-  for (const [id, user] of userStore) {
+  for (const user of userStore.values()) {
     if (user.email === normalized) {
       return user
     }
   }
+  return undefined
 }
 
-export function findUserById(id: string): StoredUser | undefined {
+export function getUserById(id: string): StoredUser | undefined {
   return userStore.get(id)
 }
 
-// Alias for compatibility
-export const getUserById = findUserById
-
-export function createUser({ name, email, password, phone }: {
+interface CreateUserInput {
   name: string
   email: string
   password: string
   phone?: string
-}): StoredUser {
-  // Check if user already exists
+  level?: UserLevel
+}
+
+export function createUser(input: CreateUserInput): StoredUser {
+  const email = input.email.toLowerCase()
   if (findUserByEmail(email)) {
     throw new Error('Tài khoản đã tồn tại')
   }
@@ -94,11 +95,11 @@ export function createUser({ name, email, password, phone }: {
   const id = randomUUID()
   const user: StoredUser = {
     id,
-    name,
-    email: email.toLowerCase(),
-    passwordHash: hashPassword(password),
-    level: 'normal',
-    phone,
+    name: input.name,
+    email,
+    passwordHash: hashPassword(input.password),
+    level: input.level ?? 'normal',
+    phone: input.phone,
     createdAt: new Date().toISOString()
   }
 
@@ -107,6 +108,6 @@ export function createUser({ name, email, password, phone }: {
 }
 
 export function sanitizeUser(user: StoredUser): Omit<StoredUser, 'passwordHash'> {
-  const { passwordHash, ...sanitized } = user
-  return sanitized
+  const { passwordHash, ...rest } = user
+  return rest
 }

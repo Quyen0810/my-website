@@ -1,4 +1,5 @@
 'use client'
+
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
@@ -98,43 +99,44 @@ export default function LoginUserPage() {
     }
 
     setIsLoading(true)
-    try {
-        const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
-        const payload = isLogin
-          ? { email: formData.email, password: formData.password }
-          : {
-              name: formData.name,
-              email: formData.email,
-              phone: formData.phone,
-              password: formData.password
-            }
-  
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          credentials: 'include'
-        })
-  
-        const data = await response.json().catch(() => null)
-  
-        if (!response.ok) {
-          const message = data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.'
-          throw new Error(message)
-        }
-  
-        toast.success(isLogin ? 'Đăng nhập thành công!' : 'Đăng ký thành công!')
-        router.push('/')
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Có lỗi xảy ra. Vui lòng thử lại.'
-        toast.error(message)
-      } finally {
-        setIsLoading(false)
-      }
-    }
 
-    const HandleSocialLogin =(provider: 'google' | 'facebook' | 'twitter') => {
-        toast.error(`Đăng nhập với ${provider} đang được phát triển`)
+    try {
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
+      const payload = isLogin
+        ? { email: formData.email, password: formData.password }
+        : {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            password: formData.password
+          }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include'
+      })
+
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        const message = data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.'
+        throw new Error(message)
+      }
+
+      toast.success(isLogin ? 'Đăng nhập thành công!' : 'Đăng ký thành công!')
+      router.push('/')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Có lỗi xảy ra. Vui lòng thử lại.'
+      toast.error(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSocialLogin = (provider: 'google' | 'facebook' | 'twitter') => {
+    toast.error(`Đăng nhập với ${provider} đang được phát triển`)
   }
 
   const handleForgotPassword = () => {
