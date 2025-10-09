@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { 
   User, 
   Settings, 
@@ -15,11 +15,18 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+interface SessionResponse {
+  user: UserData
+}
+
 interface UserData {
+  id: string
   name: string
   email: string
   level: 'normal' | 'pro' | 'admin'
   avatar?: string
+  phone?: string
+  createdAt?: string
 }
 
 type UserIconMode = 'inline' | 'floating'
@@ -37,17 +44,39 @@ export default function UserIcon({ mode = 'floating' }: UserIconProps) {
   const popupRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const savedUser = localStorage.getItem('vilaw_user')
-    if (savedUser) {
+    let isMounted = true
+
+    const fetchSession = async () => {
       try {
-        const userData = JSON.parse(savedUser)
-        setUser(userData)
+      const response = await fetch('/api/auth/session', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+
+      if (!isMounted) return
+
+      if (response.ok) {
+        const data: SessionResponse = await response.json()
+        setUser(data.user)
         setIsLoggedIn(true)
-      } catch (error) {
-        console.error('Error parsing user data:', error)
+      } else {
+        setUser(null)
+        setIsLoggedIn(false)
+      }
+    } catch (error) {
+      console.error('Unable to fetch session', error)
+      if (isMounted) {
+        setUser(null)
+        setIsLoggedIn(false)
       }
     }
+  }
+  fetchSession()
+
+  return () => {
+    isMounted = false
+  }
   }, [])
 
   const deriveNameFromEmail = (email?: string) => {
