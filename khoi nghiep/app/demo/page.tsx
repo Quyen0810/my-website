@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   User, 
@@ -12,8 +12,12 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { useAuth } from '@/lib/auth/AuthProvider'
+import { supabaseBrowser } from '@/lib/auth/supabaseBrowser'
+import SupabaseUserIcon from '@/app/components/SupabaseUserIcon'
 
 export default function DemoPage() {
+  const { user, loading } = useAuth()
   const [currentLevel, setCurrentLevel] = useState<'normal' | 'pro' | 'admin'>('normal')
 
   const demoUsers = [
@@ -21,6 +25,7 @@ export default function DemoPage() {
       level: 'normal' as const,
       name: 'Nguyễn Văn A',
       email: 'user@example.com',
+      password: 'user123',
       description: 'Người dùng cơ bản',
       features: ['Truy cập cơ bản', 'Tìm kiếm văn bản', 'Chat AI cơ bản']
     },
@@ -28,6 +33,7 @@ export default function DemoPage() {
       level: 'pro' as const,
       name: 'Trần Thị B',
       email: 'pro@example.com',
+      password: 'pro123',
       description: 'Người dùng cao cấp',
       features: ['Tất cả tính năng Normal', 'Phân tích hợp đồng', 'Soạn thảo văn bản', 'Hỗ trợ ưu tiên']
     },
@@ -35,40 +41,74 @@ export default function DemoPage() {
       level: 'admin' as const,
       name: 'Admin ViLaw',
       email: 'admin@vilaw.com',
+      password: 'admin123',
       description: 'Quản trị viên hệ thống',
       features: ['Tất cả tính năng Pro', 'Quản lý hệ thống', 'Báo cáo chi tiết', 'Quản lý người dùng']
     }
   ]
-
-  const setDemoUser = (level: 'normal' | 'pro' | 'admin') => {
-    const user = demoUsers.find(u => u.level === level)
+  useEffect(() => {
     if (user) {
-      const userData = {
-        name: user.name,
-        email: user.email,
-        level: level,
-        avatar: undefined
+      // Determine user level based on email or user metadata
+      const email = user.email || ''
+      if (email.includes('admin')) {
+        setCurrentLevel('admin')
+      } else if (email.includes('pro')) {
+        setCurrentLevel('pro')
+      } else {
+        setCurrentLevel('normal')
       }
-      localStorage.setItem('vilaw_user', JSON.stringify(userData))
-      setCurrentLevel(level)
-      toast.success(`Đã chuyển sang ${user.name} (${level})`)
-      // Reload page to show user icon
-      setTimeout(() => {
-        window.location.reload()
-      }, 1000)
+    } else {
+      setCurrentLevel('normal')
+    }
+  }, [user])
+
+  const setDemoUser = async (level: 'normal' | 'pro' | 'admin') => {
+    const demoUser = demoUsers.find(u => u.level === level)
+    if (!demoUser) return
+
+    try {
+      const supabase = supabaseBrowser()
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: demoUser.email,
+        password: demoUser.password,
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      if (data.user) {
+        setCurrentLevel(level)
+        toast.success(`Đã chuyển sang ${demoUser.name} (${level})`)
+        // Reload page to show user icon
+        setTimeout(() => {
+          window.location.reload()
+        }, 800)
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Không thể đăng nhập tài khoản demo'
+      toast.error(message)
     }
   }
 
-  const clearUser = () => {
-    localStorage.removeItem('vilaw_user')
-    toast.success('Đã xóa thông tin người dùng')
-    setTimeout(() => {
-      window.location.reload()
-    }, 1000)
+  const clearUser = async () => {
+    try {
+      const supabase = supabaseBrowser()
+      await supabase.auth.signOut()
+      toast.success('Đã xóa thông tin người dùng')
+      setTimeout(() => {
+        window.location.reload()
+      }, 800)
+    } catch (error) {
+      console.error('Không thể đăng xuất demo', error)
+      toast.error('Không thể xóa thông tin. Vui lòng thử lại.')
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-accent-50 to-primary-100">
+      {/* Supabase User Icon */}
+      <SupabaseUserIcon mode="floating" />
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">

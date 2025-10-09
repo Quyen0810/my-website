@@ -16,27 +16,13 @@ import {
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/auth/AuthProvider'
 
-interface SessionResponse {
-  user: UserData
-}
-
-interface UserData {
-  id: string
-  name: string
-  email: string
-  level: 'normal' | 'pro' | 'admin'
-  avatar?: string
-  phone?: string
-  createdAt?: string
-}
-
 type UserIconMode = 'inline' | 'floating'
 
-interface UserIconProps {
+interface SupabaseUserIconProps {
   mode?: UserIconMode
 }
 
-export default function UserIcon({ mode = 'floating' }: UserIconProps) {
+export default function SupabaseUserIcon({ mode = 'floating' }: SupabaseUserIconProps) {
   const { user: authUser, loading, signOut } = useAuth()
   const [showPopup, setShowPopup] = useState(false)
   const [isClicked, setIsClicked] = useState(false)
@@ -66,11 +52,12 @@ export default function UserIcon({ mode = 'floating' }: UserIconProps) {
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ')
   }
-const handleLogout = async () => {
+
+  const handleLogout = async () => {
     try {
       await signOut()
+      toast.success('Đã đăng xuất thành công')
       setShowPopup(false)
-      toast.success('Đã đăng xuất thành công!')
     } catch (error) {
       console.error('Logout error:', error)
       toast.error('Không thể đăng xuất. Vui lòng thử lại.')
@@ -100,11 +87,6 @@ const handleLogout = async () => {
     setTimeout(() => {
       setIsClicked(false)
     }, 150)
-  }
-
-  // Demo function to test different user levels (remove in production)
-  const demoUserLevels = () => {
-    toast.error('Demo chuyển level không còn hỗ trợ với Supabase')
   }
 
   const getLevelIcon = (level: string) => {
@@ -140,24 +122,42 @@ const handleLogout = async () => {
     }
   }
 
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setShowPopup(false)
+      }
+    }
+
+    if (showPopup) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showPopup])
+
   if (loading) {
     return (
       <div className={mode === 'floating' ? 'fixed top-4 right-4 z-50' : ''}>
-        <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+        <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
       </div>
     )
   }
+
   if (!isLoggedIn || !authUser) {
     return null
   }
 
-  const displayName = deriveNameFromEmail(authUser.email || undefined)
+  const displayName = deriveNameFromEmail(authUser.email)
 
   return (
     <div className={mode === 'floating' ? 'fixed top-4 right-4 z-50' : ''}>
       <div className="relative">
         <button
-          onClick={(e) => { e.stopPropagation(); handleClick() }}
+          onClick={handleClick}
           className={`flex items-center space-x-2 bg-white rounded-full shadow-lg border border-gray-200 px-3 py-2 hover:shadow-xl transition-all duration-200 ${
             isClicked ? 'scale-95 shadow-md' : 'scale-100'
           } hover:scale-105 active:scale-95`}
@@ -180,7 +180,6 @@ const handleLogout = async () => {
         {showPopup && (
           <div 
             ref={popupRef}
-            onClick={(e) => e.stopPropagation()}
             className={`absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 py-2 transform transition-all duration-300 ease-out popup-container ${
               isAnimating 
                 ? (showPopup ? 'animate-in slide-in-from-top-2 fade-in-0 zoom-in-95' : 'animate-out slide-out-to-top-2 fade-out-0 zoom-out-95')
@@ -263,15 +262,6 @@ const handleLogout = async () => {
                 <HelpCircle className="w-4 h-4" />
                 <span>Trợ giúp</span>
               </a>
-              
-              {/* Demo button - remove in production */}
-              <button
-                onClick={demoUserLevels}
-                className="flex items-center space-x-3 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 w-full transition-all duration-200 hover:translate-x-1 animate-in slide-in-from-right-2 fade-in-0 animation-delay-350"
-              >
-                <Crown className="w-4 h-4" />
-                <span>Demo: Chuyển level</span>
-              </button>
             </div>
 
             {/* Logout */}
@@ -287,22 +277,6 @@ const handleLogout = async () => {
           </div>
         )}
       </div>
-
-      {/* Backdrop to close popup */}
-      {showPopup && (
-        <div
-          className={`fixed inset-0 z-40 transition-opacity duration-300 ${
-            isAnimating ? 'animate-in fade-in-0' : 'opacity-100'
-          }`}
-          onClick={() => {
-            setIsAnimating(true)
-            setTimeout(() => {
-              setShowPopup(false)
-              setIsAnimating(false)
-            }, 200)
-          }}
-        />
-      )}
     </div>
   )
 }
