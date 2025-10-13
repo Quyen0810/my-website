@@ -212,7 +212,7 @@ export default function ChatPage() {
 
   const generateAIResponse = async (userInput: string): Promise<string> => {
     try {
-      const response = await fetch("https://vilaw.onrender.com/chat", {
+      const response = await fetch("https://bot-law-vn.onrender.com/ai_answer", {
         method: "POST", // use POST instead of GET
         headers: {
           "Content-Type": "application/json"

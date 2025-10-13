@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // output: 'export', // Commented out to enable middleware
+  output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true,
