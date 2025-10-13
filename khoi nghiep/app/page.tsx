@@ -4,10 +4,11 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { useAuth } from '@/lib/auth/AuthProvider'
 //
 import logoImg from '../1.jpg'
 import UserIcon from './components/UserIcon'
-import SupabaseUserIcon from './components/SupabaseUserIcon'
+// SupabaseUserIcon is no longer needed on home; using unified UserIcon
 import {
   Search,
   MessageSquare,
@@ -143,24 +144,12 @@ const stats = [
 ]
 
 export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/session')
-      .then((r) => r.json())
-      .then((data) => setIsLoggedIn(!!data?.authenticated))
-      .catch(() => {
-        try {
-          const saved = localStorage.getItem('vilaw_user')
-          setIsLoggedIn(!!saved)
-        } catch {}
-      })
-  }, [])
+  const { user: authUser, loading } = useAuth()
+  const isLoggedIn = !!authUser
 
   return (
     <div className="min-h-screen bg-hero">
-      {/* Supabase User Icon */}
-      <SupabaseUserIcon mode="floating" />
+      {/* User icon is globally rendered in layout; no floating icon here */}
       
       {/* Header */}
       <header className="glass-effect sticky top-0 z-50">
@@ -186,20 +175,9 @@ export default function HomePage() {
 
             <div className="flex items-center space-x-4">
               {isLoggedIn ? (
-                <button
-                  onClick={async () => {
-                    try {
-                      await fetch('/api/session', { method: 'DELETE' })
-                      localStorage.removeItem('vilaw_user')
-                      window.location.reload()
-                    } catch {}
-                  }}
-                  className="btn-ghost"
-                >
-                  Đăng xuất
-                </button>
+                <UserIcon mode="inline" />
               ) : (
-                <Link href="/login" className="btn-ghost">
+                <Link href="/supabase-login" className="btn-ghost">
                   Đăng nhập
                 </Link>
               )}
