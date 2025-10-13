@@ -66,6 +66,14 @@ export default function UserIcon({ mode = 'floating' }: UserIconProps) {
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ')
   }
+  const getDisplayName = () => {
+    const meta = authUser?.user_metadata as Record<string, any> | undefined
+    const fullName = meta?.full_name || meta?.name
+    if (typeof fullName === 'string' && fullName.trim().length > 0) {
+      return fullName.trim()
+    }
+    return deriveNameFromEmail(authUser?.email || undefined)
+  }
 const handleLogout = async () => {
     try {
       await signOut()
@@ -151,7 +159,7 @@ const handleLogout = async () => {
     return null
   }
 
-  const displayName = deriveNameFromEmail(authUser.email || undefined)
+  const displayName = getDisplayName()
 
   return (
     <div className={mode === 'floating' ? 'fixed top-4 right-4 z-50' : ''}>
