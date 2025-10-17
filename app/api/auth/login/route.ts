@@ -1,39 +1,70 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { findUserByEmail, sanitizeUser } from '@/lib/auth/userStore'
-import { verifyPassword } from '@/lib/auth/password'
-import { createSession, SESSION_MAX_AGE } from '@/lib/auth/sessionStore'
+import { createHmac } from "node:crypto";
+import { NextRequest, NextResponse } from "next/server";
+
+const TOKEN_EXPIRATION_SECONDS = 60 * 60; // 1 hour
+
+const base64UrlEncode = (value: string | Buffer) =>
+    Buffer.from(value)
+        .toString("base64")
+        .replace(/=/g, "")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_");
+
+const createJwtToken = (payload: Record<string, unknown>, secret: string) => {
+    const header = {
+        alg: "HS256",
+        typ: "JWT",
+    };
+
+    const encodedHeader = base64UrlEncode(JSON.stringify(header));
+    const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+    const data = `${encodedHeader}.${encodedPayload}`;
+    const signature = base64UrlEncode(createHmac("sha256", secret).update(data).digest());
+
+    return `${data}.${signature}`;
+};
+
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const email = typeof body.email === 'string' ? body.email.trim() : ''
-    const password = typeof body.password === 'string' ? body.password : ''
+    const secret = process.env.AUTH_JWT_SECRET;
 
-    if (!email || !password) {
-      return NextResponse.json({ message: 'Email và mật khẩu là bắt buộc' }, { status: 400 })
+    if (!secret) {
+        return NextResponse.json(
+            { error: "AUTH_JWT_SECRET is not configured" },
+            { status: 500 }
+        );
     }
 
-    const user = findUserByEmail(email)
-    if (!user || !verifyPassword(password, user.passwordHash)) {
-      return NextResponse.json({ message: 'Email hoặc mật khẩu không đúng' }, { status: 401 })
+    let body: { userId?: unknown; email?: unknown };
+    try {
+        body = await request.json();
+    } catch (error) {
+        return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const session = createSession(user.id)
-    const response = NextResponse.json({ user: sanitizeUser(user) })
+    const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim() : "";
 
-    response.cookies.set({
-      name: 'vilaw_session',
-      value: session.id,
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: SESSION_MAX_AGE,
-      path: '/'
-    })
+    if (!userId) {
+        return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
 
-    return response
-  } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json({ message: 'Không thể đăng nhập. Vui lòng thử lại.' }, { status: 500 })
-  }
+    const issuedAt = Math.floor(Date.now() / 1000);
+    const payload: Record<string, unknown> = {
+        sub: userId,
+        iat: issuedAt,
+        exp: issuedAt + TOKEN_EXPIRATION_SECONDS,
+    };
+
+    if (email) {
+        payload.email = email;
+    }
+
+    try {
+        const token = createJwtToken(payload, secret);
+        return NextResponse.json({ token });
+    } catch (error) {
+        console.error("Failed to create login token:", error);
+        return NextResponse.json({ error: "Unable to generate login token" }, { status: 500 });
+    }
 }

@@ -4,10 +4,11 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { useAuth } from '@/lib/auth/AuthProvider'
 //
 import logoImg from '../1.jpg'
-import UserIcon from './components/UserIcon'
 import SupabaseUserIcon from './components/SupabaseUserIcon'
+// SupabaseUserIcon is no longer needed on home; using unified UserIcon
 import {
   Search,
   MessageSquare,
@@ -143,24 +144,12 @@ const stats = [
 ]
 
 export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/session')
-      .then((r) => r.json())
-      .then((data) => setIsLoggedIn(!!data?.authenticated))
-      .catch(() => {
-        try {
-          const saved = localStorage.getItem('vilaw_user')
-          setIsLoggedIn(!!saved)
-        } catch {}
-      })
-  }, [])
+  const { user: authUser, loading } = useAuth()
+  const isLoggedIn = !!authUser
 
   return (
     <div className="min-h-screen bg-hero">
-      {/* Supabase User Icon */}
-      <SupabaseUserIcon mode="floating" />
+      {/* User icon is globally rendered in layout; no floating icon here */}
       
       {/* Header */}
       <header className="glass-effect sticky top-0 z-50">
@@ -186,20 +175,9 @@ export default function HomePage() {
 
             <div className="flex items-center space-x-4">
               {isLoggedIn ? (
-                <button
-                  onClick={async () => {
-                    try {
-                      await fetch('/api/session', { method: 'DELETE' })
-                      localStorage.removeItem('vilaw_user')
-                      window.location.reload()
-                    } catch {}
-                  }}
-                  className="btn-ghost"
-                >
-                  Đăng xuất
-                </button>
+                <SupabaseUserIcon mode="inline" />
               ) : (
-                <Link href="/login" className="btn-ghost">
+                <Link href="/supabase-login" className="btn-ghost">
                   Đăng nhập
                 </Link>
               )}
@@ -254,8 +232,8 @@ export default function HomePage() {
 
         {/* Subtle Background Elements */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-20 left-10 w-96 h-96 rounded-full bg-blue-100 opacity-30 animate-float"></div>
-          <div className="absolute top-40 right-10 w-80 h-80 rounded-full bg-slate-100 opacity-40 animate-float animation-delay-200"></div>
+          <div className="absolute top-20 left-10 w-96 h-96 rounded-full bg-primary-100 opacity-30 animate-float"></div>
+          <div className="absolute top-40 right-10 w-80 h-80 rounded-full bg-accent-100 opacity-40 animate-float animation-delay-200"></div>
         </div>
       </section>
 
@@ -271,8 +249,8 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <div className="flex items-center justify-center w-16 h-16 bg-blue-50 rounded-xl mx-auto mb-4">
-                  <div className="text-blue-600">{stat.icon}</div>
+                <div className="flex items-center justify-center w-16 h-16 bg-primary-50 rounded-xl mx-auto mb-4">
+                  <div className="text-primary-700">{stat.icon}</div>
                 </div>
                 <div className="text-3xl font-bold text-slate-900 mb-2">{stat.value}</div>
                 <div className="text-slate-600 font-medium">{stat.label}</div>
@@ -303,7 +281,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-primary-700 to-primary-800 flex items-center justify-center mb-6">
                   <div className="text-white">{feature.icon}</div>
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900 mb-3">{feature.title}</h3>
@@ -318,7 +296,7 @@ export default function HomePage() {
       <section className="py-20 bg-section">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
-            className="card-elevated bg-gradient-to-r from-blue-50 to-slate-50"
+            className="card-elevated bg-gradient-to-r from-primary-50 to-slate-50"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6 }}
@@ -334,13 +312,13 @@ export default function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <Link href="/legal" className="card hover:shadow-medium transition-all duration-300 group">
                   <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                      <SearchIcon className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                      <SearchIcon className="w-6 h-6 text-primary-700" />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900">Duyệt văn bản</h3>
                   </div>
                   <p className="text-slate-600 mb-6">Tìm kiếm và lọc văn bản pháp luật với AI</p>
-                  <div className="flex items-center text-blue-600 group-hover:text-blue-700 font-medium">
+                  <div className="flex items-center text-primary-700 group-hover:text-primary-800 font-medium">
                     <span>Thử ngay</span>
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </div>
@@ -348,13 +326,13 @@ export default function HomePage() {
 
                 <Link href="/chat" className="card hover:shadow-medium transition-all duration-300 group">
                   <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
-                      <MessageSquare className="w-6 h-6 text-slate-600" />
+                    <div className="w-12 h-12 bg-accent-100 rounded-xl flex items-center justify-center">
+                      <MessageSquare className="w-6 h-6 text-accent-700" />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900">Chat AI</h3>
                   </div>
                   <p className="text-slate-600 mb-6">Trò chuyện với trợ lý pháp lý AI</p>
-                  <div className="flex items-center text-slate-600 group-hover:text-slate-700 font-medium">
+                  <div className="flex items-center text-accent-700 group-hover:text-accent-800 font-medium">
                     <span>Thử ngay</span>
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </div>
@@ -362,13 +340,13 @@ export default function HomePage() {
 
                 <Link href="/documents" className="card hover:shadow-medium transition-all duration-300 group">
                   <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-primary-700" />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900">Soạn thảo</h3>
                   </div>
                   <p className="text-slate-600 mb-6">Tạo văn bản pháp lý với AI assistance</p>
-                  <div className="flex items-center text-blue-600 group-hover:text-blue-700 font-medium">
+                  <div className="flex items-center text-primary-700 group-hover:text-primary-800 font-medium">
                     <span>Thử ngay</span>
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </div>
@@ -397,7 +375,7 @@ export default function HomePage() {
                 key={pkg.name}
                 className={`relative card-elevated ${
                   pkg.popular 
-                    ? 'border-blue-200 shadow-medium' 
+                    ? 'border-primary-200 shadow-medium' 
                     : ''
                 }`}
                 initial={{ opacity: 0, y: 20 }}
@@ -406,14 +384,14 @@ export default function HomePage() {
               >
                 {pkg.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium">
+                    <span className="bg-primary-700 text-white px-4 py-2 rounded-full text-sm font-medium">
                       Phổ biến
                     </span>
                   </div>
                 )}
                 
                 <div className="text-center mb-8">
-                  <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-50 text-blue-600 mb-6">
+                  <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-primary-50 text-primary-700 mb-6">
                     {pkg.badge}
                   </div>
                   <h3 className="text-2xl font-bold text-slate-900 mb-2">{pkg.name}</h3>

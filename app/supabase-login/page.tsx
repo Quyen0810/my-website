@@ -1,12 +1,14 @@
+// app/supabase-login/page.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
-import { supabaseBrowser } from '@/lib/auth/supabaseBrowser'
+import { supabaseBrowser } from '@/lib/auth/supabaseBrowser' // ← đảm bảo đúng path export singleton
 
 export default function SupabaseLoginPage() {
   const router = useRouter()
+  const supabase = supabaseBrowser; // ✅ KHÔNG gọi như hàm
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,22 +19,29 @@ export default function SupabaseLoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
+  // Dọn URL nếu có ?code=&state= sau khi Supabase đã exchange code -> session
   useEffect(() => {
-    // Check if user is already logged in
-    checkSession()
+    const url = new URL(window.location.href)
+    if (url.searchParams.has('code') || url.searchParams.has('state')) {
+      url.searchParams.delete('code')
+      url.searchParams.delete('state')
+      window.history.replaceState({}, '', url.pathname + url.search)
+    }
   }, [])
 
-  const checkSession = async () => {
+  // Kiểm tra session hiện tại; nếu đã đăng nhập thì chuyển về trang chủ
+  const checkSession = useCallback(async () => {
     try {
-      const supabase = supabaseBrowser()
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        router.replace('/')
-      }
-    } catch (error) {
-      console.error('Session check error:', error)
+      if (user) router.replace('/')
+    } catch (err) {
+      console.error('Session check error:', err)
     }
-  }
+  }, [router, supabase])
+
+  useEffect(() => {
+    checkSession()
+  }, [checkSession])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,21 +50,11 @@ export default function SupabaseLoginPage() {
     setLoading(true)
 
     try {
-      const supabase = supabaseBrowser()
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      if (data.user) {
-        router.replace('/')
-      }
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw new Error(error.message)
+      if (data.user) router.replace('/')
     } catch (err: any) {
-      setError(err.message || 'Đăng nhập thất bại')
+      setError(err?.message || 'Đăng nhập thất bại')
     } finally {
       setLoading(false)
     }
@@ -68,32 +67,23 @@ export default function SupabaseLoginPage() {
     setLoading(true)
 
     try {
-      const supabase = supabaseBrowser()
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            name: name || '',
-            phone: phone || '',
-          }
-        }
+        options: { data: { name: name || '', phone: phone || '' } },
       })
-
-      if (error) {
-        throw new Error(error.message)
-      }
+      if (error) throw new Error(error.message)
 
       if (data.user) {
         if (data.user.email_confirmed_at) {
           setMessage('Đăng ký thành công! Đang chuyển hướng...')
-          setTimeout(() => router.replace('/'), 2000)
+          setTimeout(() => router.replace('/'), 1200)
         } else {
           setMessage('Vui lòng kiểm tra email để xác thực tài khoản')
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Đăng ký thất bại')
+      setError(err?.message || 'Đăng ký thất bại')
     } finally {
       setLoading(false)
     }
@@ -105,19 +95,24 @@ export default function SupabaseLoginPage() {
     setLoading(true)
 
     try {
-      const supabase = supabaseBrowser()
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // redirectTo quay thẳng về ORIGIN bạn đang chạy (http://localhost:3001)
+      // hoặc NEXT_PUBLIC_SITE_URL nếu bạn muốn cố định.
+      const origin =
+        (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')) ||
+        window.location.origin
+
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
-        }
+          redirectTo: origin, // ← KHÔNG /auth/callback tự viết
+          // scopes: 'openid email profile', // tuỳ chọn
+          // queryParams: { access_type: 'offline', prompt: 'consent' }, // tuỳ chọn
+        },
       })
-
-      if (error) {
-        throw new Error(error.message)
-      }
+      if (error) throw new Error(error.message)
+      // Không cần setLoading(false) — đang chuyển tab sang Google
     } catch (err: any) {
-      setError(err.message || 'Google đăng nhập thất bại')
+      setError(err?.message || 'Google đăng nhập thất bại')
       setLoading(false)
     }
   }
@@ -216,16 +211,13 @@ export default function SupabaseLoginPage() {
               </div>
             </div>
 
-            {error && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</div>
-            )}
-
+            {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</div>}
             {message && (
               <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md">{message}</div>
             )}
 
             <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập' : 'Đăng ký')}
+              {loading ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Đăng ký'}
             </button>
           </form>
 
@@ -263,11 +255,7 @@ export default function SupabaseLoginPage() {
               {isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}{' '}
               <button
                 type="button"
-                onClick={() => {
-                  setIsLogin(!isLogin)
-                  setError(null)
-                  setMessage(null)
-                }}
+                onClick={() => { setIsLogin(!isLogin); setError(null); setMessage(null) }}
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
                 {isLogin ? 'Đăng ký ngay' : 'Đăng nhập'}
@@ -276,9 +264,7 @@ export default function SupabaseLoginPage() {
           </div>
 
           <div className="mt-4 text-center">
-            <p className="text-sm text-gray-500">
-              Sử dụng Supabase Authentication
-            </p>
+            <p className="text-sm text-gray-500">Sử dụng Supabase Authentication</p>
           </div>
         </div>
       </div>

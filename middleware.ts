@@ -33,13 +33,20 @@ export async function middleware(req: NextRequest) {
     req.nextUrl.pathname.startsWith('/payment')
   ) {
     if (!session) {
-      return NextResponse.redirect(new URL('/supabase-login', req.url))
+      const url = new URL('/supabase-login', req.url)
+      const redirect = NextResponse.redirect(url)
+      // propagate any auth cookies set during getSession back to the client
+      res.cookies.getAll().forEach((c) => redirect.cookies.set(c))
+      return redirect
     }
   }
 
   // ✅ Redirect người đã đăng nhập khỏi trang login
   if (req.nextUrl.pathname === '/supabase-login' && session) {
-    return NextResponse.redirect(new URL('/', req.url))
+    const url = new URL('/', req.url)
+    const redirect = NextResponse.redirect(url)
+    res.cookies.getAll().forEach((c) => redirect.cookies.set(c))
+    return redirect
   }
 
   return res
