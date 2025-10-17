@@ -8,11 +8,11 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
   }
-  
+
   body {
     @apply bg-slate-50 text-slate-900;
   }
-  
+
   * {
     @apply border-slate-200;
   }
@@ -23,44 +23,136 @@
   .btn-primary {
     @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
   }
-  
+
   .btn-secondary {
     @apply bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3 px-6 rounded-lg transition-all duration-200 border border-slate-200;
   }
-  
+
   .btn-outline {
     @apply bg-white hover:bg-slate-50 text-slate-700 font-medium py-3 px-6 rounded-lg transition-all duration-200 border border-slate-300 hover:border-slate-400;
   }
-  
+
   .btn-ghost {
     @apply bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900 font-medium py-3 px-6 rounded-lg transition-all duration-200;
   }
-  
+
+  .section-badge {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-medium shadow-inner;
+  }
+
   /* Card Components */
   .card {
     @apply bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow duration-200;
   }
-  
+
   .card-elevated {
     @apply bg-white rounded-xl shadow-lg border border-slate-200 p-8;
   }
-  
-  /* Form Elements */
-  .input-field {
-    @apply w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white;
+
+  .card-soft {
+    @apply rounded-2xl border border-slate-200 bg-white/90 backdrop-blur shadow-soft p-6;
   }
-  
-  .select-field {
-    @apply w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white;
+
+  .highlight-card {
+    @apply flex gap-3 items-start rounded-2xl border border-blue-100 bg-white/80 p-4 shadow-soft backdrop-blur;
   }
-  
-  /* Navigation */
-  .nav-link {
-    @apply text-slate-600 hover:text-slate-900 font-medium transition-colors duration-200;
+
+  .highlight-icon {
+    @apply w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-inner;
   }
-  
-  .nav-link-active {
-    @apply text-blue-600 font-semibold;
+
+  .feature-card {
+    @apply bg-white rounded-2xl border border-slate-200 p-8 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-medium relative overflow-hidden;
+  }
+
+  .feature-card::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 4px;
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.3), rgba(147, 197, 253, 0.6));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .feature-card:hover::after {
+    opacity: 1;
+  }
+
+  .feature-icon {
+    @apply w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20;
+  }
+
+  .badge-soft {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-blue-600;
+  }
+
+  .hero-card {
+    @apply rounded-3xl border border-slate-200 bg-white/90 backdrop-blur shadow-xl p-8 space-y-6;
+  }
+
+  .floating-card {
+    @apply absolute -bottom-10 left-1/2 -translate-x-1/2 md:-right-10 md:left-auto md:translate-x-0 bg-white/90 backdrop-blur border border-blue-100 rounded-2xl shadow-xl p-4 w-[260px];
+  }
+
+  .journey-card {
+    @apply flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4;
+  }
+
+  .stat-card {
+    @apply rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-soft;
+  }
+
+  .stat-value {
+    @apply text-2xl font-semibold text-slate-900;
+  }
+
+  .stat-label {
+    @apply text-sm text-slate-500;
+  }
+
+  .usecase-panel {
+    @apply rounded-3xl border border-slate-200 bg-white/90 backdrop-blur shadow-soft p-8 space-y-8;
+  }
+
+  .usecase-tab {
+    @apply inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-all duration-200 hover:border-blue-200 hover:text-blue-600;
+  }
+
+  .usecase-tab-active {
+    @apply border-blue-500 bg-blue-50 text-blue-600 shadow-inner;
+  }
+
+  .usecase-content {
+    @apply rounded-2xl border border-slate-200 bg-slate-50/80 p-6 space-y-4;
+  }
+
+  .usecase-highlight {
+    @apply inline-flex items-center gap-3 rounded-xl bg-white border border-slate-200 px-4 py-3 text-sm text-slate-600 shadow-inner;
+  }
+
+  .journey-step {
+    @apply rounded-3xl border border-slate-200 bg-white/90 backdrop-blur shadow-soft p-6 space-y-3;
+  }
+
+  .journey-icon {
+    @apply w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner;
+  }
+
+  .testimonial-card {
+    @apply rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-medium;
+  }
+
+  .resource-card {
+    @apply rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-medium;
+  }
+
+  .resource-icon {
+    @apply w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-6 shadow-inner;
+  }
+
+  .cta-card {
+    @apply rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-50 via-white to-blue-100 p-10 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-10;
   }
 }
 
@@ -69,41 +161,51 @@
   .text-gradient {
     @apply bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent;
   }
-  
+
   .text-gradient-accent {
     @apply bg-gradient-to-r from-slate-600 to-slate-800 bg-clip-text text-transparent;
   }
-  
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
   /* Professional Backgrounds */
   .bg-hero {
     @apply bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100;
   }
-  
+
   .bg-section {
     @apply bg-white;
   }
-  
+
   .bg-section-alt {
     @apply bg-slate-50;
   }
-  
+
+  .bg-grid {
+    background-image: linear-gradient(to right, rgba(148, 163, 184, 0.15) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
   /* Glass Effect */
   .glass-effect {
     @apply backdrop-blur-sm bg-white/90 border border-white/20 shadow-lg;
   }
-  
+
   /* Animation Delays */
   .animation-delay-100 { animation-delay: 0.1s; }
   .animation-delay-200 { animation-delay: 0.2s; }
   .animation-delay-300 { animation-delay: 0.3s; }
   .animation-delay-400 { animation-delay: 0.4s; }
   .animation-delay-500 { animation-delay: 0.5s; }
-  
+
   /* Professional Shadows */
   .shadow-soft {
     box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
   }
-  
+
   .shadow-medium {
     box-shadow: 0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
@@ -182,4 +284,4 @@
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
-} 
+}
