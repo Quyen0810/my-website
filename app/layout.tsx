@@ -48,10 +48,10 @@ export default async function RootLayout({
           Nếu AuthProvider của bạn hỗ trợ, truyền user ban đầu để client đồng bộ ngay.
           Nếu AuthProvider KHÔNG nhận prop này, bạn có thể bỏ `initialUser={user}` đi.
         */}
-        <AuthProvider initialUser={user ?? null}>
+          <AuthProvider>
           {/* Hiển thị icon nổi khi đã đăng nhập (client component).
              Truyền user từ server để tránh nhấp nháy khi hydrate. */}
-          <SupabaseUserIcon mode="floating" user={user ?? null} />
+          <SupabaseUserIcon mode="floating" />
           {children}
         </AuthProvider>
 

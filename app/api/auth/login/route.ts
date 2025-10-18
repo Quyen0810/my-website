@@ -1,3 +1,4 @@
+//app/api/auth/login/route.ts
 import { createHmac } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -26,11 +27,11 @@ const createJwtToken = (payload: Record<string, unknown>, secret: string) => {
 
 
 export async function POST(request: NextRequest) {
-    const secret = process.env.AUTH_JWT_SECRET;
+    const secret = process.env.AUTH_JWT_KEY;
 
     if (!secret) {
         return NextResponse.json(
-            { error: "AUTH_JWT_SECRET is not configured" },
+            { error: "AUTH_JWT_KEY is not configured" },
             { status: 500 }
         );
     }

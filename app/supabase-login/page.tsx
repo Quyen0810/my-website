@@ -4,11 +4,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
-import { supabaseBrowser } from '@/lib/auth/supabaseBrowser' // ← đảm bảo đúng path export singleton
+import { supabaseBrowser } from '@/lib/auth/supabaseBrowser' // named import, singleton
 
 export default function SupabaseLoginPage() {
   const router = useRouter()
-  const supabase = supabaseBrowser; // ✅ KHÔNG gọi như hàm
+  const supabase = supabaseBrowser // KHÔNG gọi như hàm
+
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

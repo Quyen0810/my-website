@@ -210,30 +210,108 @@ export default function ChatPage() {
     }
   }
 
-  const generateAIResponse = async (userInput: string): Promise<string> => {
-    try {
-      const response = await fetch("https://vilaw.onrender.com/chat", {
-        method: "POST", // use POST instead of GET
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ text: userInput })
-      });
-  
-      const data = await response.json();
-      return data.ai_answer as string; // return the AI answer directly
-    } catch (err) {
-      console.log("AI response fail", err);
-      return ""; // fallback string
-    }
+  type WebhookPayload = {
+    message: string;
+    section_id: string;
   };
+  
+  type WebhookOK = { output?: string; [k: string]: unknown };
+  type WebhookErr = { error?: string; [k: string]: unknown };
+  
+  interface SendResult {
+    id: number;
+    question: string;
+    response?: WebhookOK | WebhookErr;
+    error?: string;
+  }
+  
+  const generateAIResponse = async (userInput: string): Promise<string> => {
+    // --- CÀI ĐẶT ---
+    const webhookUrl =
+      "https://cudnah.app.n8n.cloud/webhook/a6c13978-cb21-442b-b7e9-801e78add552";
+  
+    // --- CHUẨN HÓA INPUT ---
+    const questionToSend = {
+      id: 1,
+      question: userInput?.trim() || "Nội dung câu hỏi trống",
+    };
+  
+    // --- HÀM GỬI YÊU CẦU ---
+    async function sendRequest(item: { id: number; question: string }): Promise<SendResult> {
+      const payload: WebhookPayload = {
+        message: item.question,
+        section_id: String(item.id),
+      };
+  
+      // (Tuỳ chọn) timeout để tránh treo
+      const ac = new AbortController();
+      const t = setTimeout(() => ac.abort(), 30000);
+  
+      try {
+        const res = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: ac.signal,
+          // mode: "cors", // nếu chạy trên trình duyệt và server hỗ trợ CORS
+        });
+  
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        }
+  
+        // Có thể response không phải JSON hợp lệ -> cần try/catch
+        let responseJson: unknown;
+        try {
+          responseJson = await res.json();
+        } catch {
+          throw new Error("Phản hồi không phải JSON hợp lệ");
+        }
+  
+        return {
+          id: item.id,
+          question: item.question,
+          response: responseJson as WebhookOK | WebhookErr,
+        };
+      } catch (err: any) {
+        return {
+          id: item.id,
+          question: item.question,
+          error: `Lỗi kết nối hoặc yêu cầu: ${err?.message ?? String(err)}`,
+        };
+      } finally {
+        clearTimeout(t);
+      }
+    }
+  
+    // --- THỰC THI & TRẢ VỀ GIÁ TRỊ ---
+    const result = await sendRequest(questionToSend);
+  
+    if (result.error) {
+      // ném lỗi để caller có thể xử lý
+      throw new Error(result.error);
+    }
+  
+    const data = result.response ?? {};
+    const output = (data as WebhookOK).output;
+  
+    if (typeof output === "string") {
+      return output;
+    }
+  
+    // fallback: trả ra toàn bộ JSON để debug
+    throw new Error(
+      `Phản hồi không chứa key 'output'. Dữ liệu nhận được: ${JSON.stringify(data)}`
+    );
+  };
+  
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
     handleSendMessage(suggestion.text)
   }
 
-  const filteredSuggestions = selectedCategory === 'all' 
-    ? suggestions 
+  const filteredSuggestions = selectedCategory === 'all'
+    ? suggestions
     : suggestions.filter(s => s.category === selectedCategory)
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -316,19 +394,17 @@ export default function ChatPage() {
                             <Bot className="w-4 h-4 text-white" />
                           </div>
                         )}
-                        
-                        <div className={`rounded-2xl px-4 py-3 ${
-                          message.type === 'user' 
-                            ? 'bg-primary-600 text-white' 
+
+                        <div className={`rounded-2xl px-4 py-3 ${message.type === 'user'
+                            ? 'bg-primary-600 text-white'
                             : 'bg-gray-100 text-gray-900'
-                        }`}>
-                          <div className="whitespace-pre-wrap">{message.content}</div>
-                          <div className={`text-xs mt-2 ${
-                            message.type === 'user' ? 'text-primary-100' : 'text-gray-500'
                           }`}>
-                            {message.timestamp.toLocaleTimeString('vi-VN', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                          <div className={`text-xs mt-2 ${message.type === 'user' ? 'text-primary-100' : 'text-gray-500'
+                            }`}>
+                            {message.timestamp.toLocaleTimeString('vi-VN', {
+                              hour: '2-digit',
+                              minute: '2-digit'
                             })}
                           </div>
                         </div>
@@ -398,7 +474,7 @@ export default function ChatPage() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
-                  
+
                   <button
                     onClick={() => setIsRecording(!isRecording)}
                     className={`p-3 rounded-lg ${isRecording ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
@@ -406,7 +482,7 @@ export default function ChatPage() {
                   >
                     {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                   </button>
-                  
+
                   <button
                     onClick={() => handleSendMessage(inputValue)}
                     disabled={!inputValue.trim()}
@@ -424,7 +500,7 @@ export default function ChatPage() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Gợi ý câu hỏi</h3>
-              
+
               {/* Category Filter */}
               <div className="mb-4">
                 <select

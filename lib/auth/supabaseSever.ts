@@ -17,38 +17,22 @@ export async function createClient() {
     secure: process.env.NODE_ENV === 'production',
   }
 
-  return createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value
-        },
-        set(name, value, options) {
-          try {
-            cookieStore.set({
-              name,
-              value,
-              ...baseCookieOptions,
-              ...options,
-            })
-          } catch (error) {
-            console.error('Failed to set cookie', error)
-          }
-        },
-        remove(name, options) {
-          try {
-            cookieStore.delete({
-              name,
-              ...baseCookieOptions,
-              ...options,
-            })
-          } catch (error) {
-            console.error('Failed to remove cookie', error)
-          }
-        },
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      get(name) {
+        return cookieStore.get(name)?.value
       },
-    }
+      set(name, value, options) {
+        try {
+          cookieStore.set({ name, value, ...baseCookieOptions, ...options })
+        } catch (e) { console.error('Failed to set cookie', e) }
+      },
+      remove(name, options) {
+        try {
+          cookieStore.delete({ name, ...baseCookieOptions, ...options })
+        } catch (e) { console.error('Failed to remove cookie', e) }
+      },
+    },
+  }
   )
 }
