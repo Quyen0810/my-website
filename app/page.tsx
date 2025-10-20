@@ -241,8 +241,8 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-xl overflow-hidden">
-                <Image src={logoImg} alt="ViLaw" width={68} height={68} className="object-cover w-full h-full" />
+              <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shadow-sm">
+                <Image src={logoImg} alt="ViLaw" width={64} height={64} className="object-contain w-full h-full" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-900">ViLaw</h1>
