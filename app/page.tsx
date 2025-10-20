@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 //
-import logoImg from '../1.jpg'
+import logoImg from '../1.png'
 import SupabaseUserIcon from './components/SupabaseUserIcon'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import {
@@ -242,7 +242,7 @@ export default function HomePage() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 rounded-xl overflow-hidden">
-                <Image src={logoImg} alt="ViLaw" width={48} height={48} className="object-cover w-full h-full" />
+                <Image src={logoImg} alt="ViLaw" width={68} height={68} className="object-cover w-full h-full" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-900">ViLaw</h1>
