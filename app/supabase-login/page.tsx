@@ -30,11 +30,14 @@ export default function SupabaseLoginPage() {
     }
   }, [])
 
-  // Kiểm tra session hiện tại; nếu đã đăng nhập thì chuyển về trang chủ
+  // Kiểm tra session hiện tại; nếu đã đăng nhập thì chuyển về trang đích hoặc trang chủ
   const checkSession = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) router.replace('/')
+      if (user) {
+        const redirectUrl = new URL(window.location.href).searchParams.get('redirect') || '/'
+        router.replace(redirectUrl)
+      }
     } catch (err) {
       console.error('Session check error:', err)
     }
@@ -53,7 +56,10 @@ export default function SupabaseLoginPage() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw new Error(error.message)
-      if (data.user) router.replace('/')
+      if (data.user) {
+        const redirectUrl = new URL(window.location.href).searchParams.get('redirect') || '/'
+        router.replace(redirectUrl)
+      }
     } catch (err: any) {
       setError(err?.message || 'Đăng nhập thất bại')
     } finally {
@@ -78,7 +84,8 @@ export default function SupabaseLoginPage() {
       if (data.user) {
         if (data.user.email_confirmed_at) {
           setMessage('Đăng ký thành công! Đang chuyển hướng...')
-          setTimeout(() => router.replace('/'), 1200)
+          const redirectUrl = new URL(window.location.href).searchParams.get('redirect') || '/'
+          setTimeout(() => router.replace(redirectUrl), 1200)
         } else {
           setMessage('Vui lòng kiểm tra email để xác thực tài khoản')
         }

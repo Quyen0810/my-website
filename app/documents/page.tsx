@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
   FileText, 
@@ -19,10 +20,14 @@ import {
   Upload,
   Bot,
   Type,
-  Share2
+  Share2,
+  Crown,
+  Award,
+  Lock
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { useAuth } from '@/lib/auth/AuthProvider'
 
 interface DocumentTemplate {
   id: string
@@ -42,11 +47,126 @@ interface Document {
   updatedAt: Date
 }
 
+// Giới hạn số lần soạn thảo theo gói user
+const DRAFTING_LIMITS = {
+  normal: 5,
+  pro: 50,
+  admin: Infinity,
+} as const
+
+// Lưu trữ lịch sử soạn thảo trong localStorage
+const getDraftingHistoryKey = (userId: string) => `vilaw_document_drafting_${userId}`
+const getDraftingCountKey = (userId: string) => `vilaw_document_drafting_count_${userId}`
+
+// Lấy user level từ email hoặc metadata
+const getUserLevel = (email?: string): 'normal' | 'pro' | 'admin' => {
+  if (!email) return 'normal'
+  if (email.includes('admin') || email.includes('@vilaw.com')) return 'admin'
+  if (email.includes('pro')) return 'pro'
+  return 'normal'
+}
+
 export default function DocumentsPage() {
+  const router = useRouter()
+  const { user, loading } = useAuth()
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate | null>(null)
   const [currentDocument, setCurrentDocument] = useState<Document | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeTab, setActiveTab] = useState<'templates' | 'documents'>('templates')
+  const [draftingCount, setDraftingCount] = useState(0)
+  const [userLevel, setUserLevel] = useState<'normal' | 'pro' | 'admin'>('normal')
+  const [isLimitReached, setIsLimitReached] = useState(false)
+
+  // Kiểm tra đăng nhập và redirect nếu chưa đăng nhập
+  useEffect(() => {
+    if (!loading && !user) {
+      const currentPath = window.location.pathname
+      router.push(`/supabase-login?redirect=${encodeURIComponent(currentPath)}`)
+      toast.error('Vui lòng đăng nhập để sử dụng Soạn thảo Văn bản')
+    }
+  }, [user, loading, router])
+
+  // Lấy user level khi user đăng nhập
+  useEffect(() => {
+    if (user) {
+      const level = getUserLevel(user.email)
+      setUserLevel(level)
+    }
+  }, [user])
+
+  // Tải số lượng soạn thảo đã sử dụng khi user đăng nhập
+  useEffect(() => {
+    if (user && !loading) {
+      const userId = user.id
+      const countKey = getDraftingCountKey(userId)
+
+      try {
+        const savedCount = localStorage.getItem(countKey)
+        if (savedCount) {
+          const count = parseInt(savedCount, 10)
+          if (!isNaN(count)) {
+            setDraftingCount(count)
+            checkLimitReached(count, getUserLevel(user.email))
+          }
+        }
+      } catch (error) {
+        console.error('Error loading drafting count:', error)
+      }
+    }
+  }, [user, loading])
+
+  // Kiểm tra giới hạn
+  const checkLimitReached = (count: number, level: 'normal' | 'pro' | 'admin') => {
+    const limit = DRAFTING_LIMITS[level]
+    if (limit !== Infinity && count >= limit) {
+      setIsLimitReached(true)
+      return true
+    }
+    setIsLimitReached(false)
+    return false
+  }
+
+  // Lưu số lượng soạn thảo
+  const saveDraftingCount = (userId: string, count: number) => {
+    try {
+      const countKey = getDraftingCountKey(userId)
+      localStorage.setItem(countKey, count.toString())
+    } catch (error) {
+      console.error('Error saving drafting count:', error)
+    }
+  }
+
+  // Lưu lịch sử soạn thảo vào localStorage
+  const saveDraftingHistory = (userId: string, document: Document) => {
+    try {
+      const historyKey = getDraftingHistoryKey(userId)
+      const existingHistory = localStorage.getItem(historyKey)
+      const history = existingHistory ? JSON.parse(existingHistory) : []
+      
+      const newEntry = {
+        ...document,
+        createdAt: document.createdAt.toISOString(),
+        updatedAt: document.updatedAt.toISOString(),
+      }
+      
+      // Tìm và cập nhật nếu đã tồn tại, hoặc thêm mới
+      const existingIndex = history.findIndex((doc: any) => doc.id === document.id)
+      if (existingIndex >= 0) {
+        history[existingIndex] = newEntry
+      } else {
+        history.unshift(newEntry)
+      }
+      
+      // Giữ tối đa 50 bản ghi
+      if (history.length > 50) {
+        history.pop()
+      }
+      
+      localStorage.setItem(historyKey, JSON.stringify(history))
+    } catch (error) {
+      console.error('Error saving drafting history:', error)
+    }
+  }
 
   const templates: DocumentTemplate[] = [
     {
@@ -259,20 +379,59 @@ Người tố cáo
   }
 
   const handleGenerateWithAI = async () => {
-    if (!selectedTemplate) return
+    // Kiểm tra đăng nhập
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để sử dụng Soạn thảo Văn bản')
+      router.push(`/supabase-login?redirect=${encodeURIComponent('/documents')}`)
+      return
+    }
+
+    if (!selectedTemplate) {
+      toast.error('Vui lòng chọn mẫu văn bản')
+      return
+    }
+
+    // Kiểm tra giới hạn số lần soạn thảo
+    const limit = DRAFTING_LIMITS[userLevel]
+    if (limit !== Infinity && draftingCount >= limit) {
+      toast.error(`Bạn đã đạt giới hạn ${limit} lần soạn thảo cho gói ${userLevel}. Vui lòng nâng cấp để tiếp tục sử dụng.`)
+      setIsLimitReached(true)
+      return
+    }
     
     setIsGenerating(true)
     toast.success('AI đang tạo văn bản...')
+    
+    // Tăng số lượng soạn thảo và lưu
+    const newDraftingCount = draftingCount + 1
+    setDraftingCount(newDraftingCount)
+    saveDraftingCount(user.id, newDraftingCount)
+    checkLimitReached(newDraftingCount, userLevel)
     
     // Simulate AI generation
     setTimeout(() => {
       const enhancedContent = `${selectedTemplate.content}\n\n--- PHẦN BỔ SUNG TỪ AI ---\n\nLưu ý quan trọng:\n• Văn bản này tuân thủ quy định pháp luật hiện hành\n• Cần bổ sung thông tin cụ thể theo tình huống thực tế\n• Nên tham khảo ý kiến luật sư trước khi sử dụng\n• Giữ lại bản gốc và bản sao có công chứng`
       
-      setCurrentDocument(prev => prev ? {
-        ...prev,
+      const updatedDoc = currentDocument ? {
+        ...currentDocument,
         content: enhancedContent,
         updatedAt: new Date()
-      } : null)
+      } : {
+        id: Date.now().toString(),
+        title: `Bản thảo - ${selectedTemplate.name}`,
+        type: selectedTemplate.category,
+        content: enhancedContent,
+        status: 'draft' as const,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      
+      setCurrentDocument(updatedDoc)
+      
+      // Lưu lịch sử soạn thảo
+      if (user) {
+        saveDraftingHistory(user.id, updatedDoc)
+      }
       
       setIsGenerating(false)
       toast.success('Đã tạo văn bản với AI!')
@@ -280,7 +439,20 @@ Người tố cáo
   }
 
   const handleSave = () => {
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để lưu văn bản')
+      router.push(`/supabase-login?redirect=${encodeURIComponent('/documents')}`)
+      return
+    }
+
     if (!currentDocument) return
+    
+    // Lưu lịch sử
+    saveDraftingHistory(user.id, {
+      ...currentDocument,
+      updatedAt: new Date()
+    })
+    
     toast.success('Đã lưu văn bản!')
   }
 
@@ -303,6 +475,26 @@ Người tố cáo
     toast.success('Đã sao chép vào clipboard!')
   }
 
+  // Hiển thị loading khi đang kiểm tra đăng nhập
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-accent-50 to-primary-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang kiểm tra đăng nhập...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Không hiển thị nội dung nếu chưa đăng nhập (sẽ redirect)
+  if (!user) {
+    return null
+  }
+
+  const limit = DRAFTING_LIMITS[userLevel]
+  const remainingDraftings = limit === Infinity ? '∞' : Math.max(0, limit - draftingCount)
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-accent-50 to-primary-100">
       {/* Header */}
@@ -318,7 +510,20 @@ Người tố cáo
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
+            {/* Hiển thị số lần soạn thảo còn lại */}
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
+              {userLevel === 'pro' && <Crown className="w-4 h-4 text-yellow-600" />}
+              {userLevel === 'admin' && <Award className="w-4 h-4 text-red-600" />}
+              <span className="text-sm font-medium text-gray-700">
+                {isLimitReached ? (
+                  <span className="text-red-600">Đã hết lượt</span>
+                ) : (
+                  <span>Còn lại: <strong>{remainingDraftings}</strong> lần soạn thảo</span>
+                )}
+              </span>
+            </div>
+
             <button
               onClick={handleSave}
               disabled={!currentDocument?.title.trim() || !currentDocument?.content.trim()}
@@ -339,6 +544,32 @@ Người tố cáo
           </div>
         </div>
       </header>
+
+      {/* Thông báo khi đạt giới hạn */}
+      {isLimitReached && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between"
+          >
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600" />
+              <div>
+                <p className="font-medium text-gray-900">Bạn đã đạt giới hạn {limit} lần soạn thảo cho gói {userLevel}</p>
+                <p className="text-sm text-gray-600">Nâng cấp lên Pro để được {DRAFTING_LIMITS.pro} lần soạn thảo/tháng</p>
+              </div>
+            </div>
+            <Link
+              href="/payment?pkg=Pro"
+              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <Crown className="w-4 h-4" />
+              <span>Nâng cấp ngay</span>
+            </Link>
+          </motion.div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

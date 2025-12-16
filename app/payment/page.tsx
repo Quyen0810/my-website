@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { BrowserProvider, JsonRpcProvider, parseEther } from 'ethers'
+import { useAuth } from '@/lib/auth/AuthProvider'
 
 const DEFAULT_PAYMENT_ADDRESS = '0xab1710a5D125211b4BE27c439E05C5b3259Aec9C'
 const INFURA_MAINNET_RPC = 'https://mainnet.infura.io/v3/df8716592db443e5b71a83b58cb2e191'
@@ -17,13 +18,24 @@ const PACKAGE_PRICES_ETH: Record<Exclude<PackageName, 'Gov'>, number> = {
 }
 
 function PaymentPageContent() {
+  const router = useRouter()
   const params = useSearchParams()
   const pkg = (params.get('pkg') as PackageName) || 'Edu'
+  const { user, loading } = useAuth()
 
   const [isPaying, setIsPaying] = useState(false)
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [chainId, setChainId] = useState<number | null>(null)
   const [rpcBlockNumber, setRpcBlockNumber] = useState<number | null>(null)
+
+  // Kiểm tra đăng nhập và redirect nếu chưa đăng nhập
+  useEffect(() => {
+    if (!loading && !user) {
+      const currentPath = window.location.pathname + (params.toString() ? `?${params.toString()}` : '')
+      router.push(`/supabase-login?redirect=${encodeURIComponent(currentPath)}`)
+      toast.error('Vui lòng đăng nhập để thanh toán')
+    }
+  }, [user, loading, router, params])
 
   const isFree = pkg === 'Gov'
   const amountEth = useMemo(() => (isFree ? 0 : PACKAGE_PRICES_ETH[pkg as 'Edu' | 'Pro'] || 0), [pkg, isFree])
@@ -153,6 +165,23 @@ function PaymentPageContent() {
     } finally {
       setIsPaying(false)
     }
+  }
+
+  // Hiển thị loading khi đang kiểm tra đăng nhập
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-hero flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang kiểm tra đăng nhập...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Không hiển thị nội dung nếu chưa đăng nhập (sẽ redirect)
+  if (!user) {
+    return null
   }
 
   return (

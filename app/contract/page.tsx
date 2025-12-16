@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FileText, 
@@ -24,10 +25,15 @@ import {
   FileImage,
   X,
   RotateCcw,
-  Search
+  Search,
+  Crown,
+  Award,
+  Lock,
+  AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { useAuth } from '@/lib/auth/AuthProvider'
 
 interface RiskAnalysis {
   level: 'low' | 'medium' | 'high' | 'critical'
@@ -47,7 +53,28 @@ interface ContractAnalysis {
   complianceScore: number
 }
 
+// Giới hạn số lần phân tích hợp đồng theo gói user
+const ANALYSIS_LIMITS = {
+  normal: 5,
+  pro: 50,
+  admin: Infinity,
+} as const
+
+// Lưu trữ lịch sử phân tích trong localStorage
+const getAnalysisHistoryKey = (userId: string) => `vilaw_contract_analysis_${userId}`
+const getAnalysisCountKey = (userId: string) => `vilaw_contract_analysis_count_${userId}`
+
+// Lấy user level từ email hoặc metadata
+const getUserLevel = (email?: string): 'normal' | 'pro' | 'admin' => {
+  if (!email) return 'normal'
+  if (email.includes('admin') || email.includes('@vilaw.com')) return 'admin'
+  if (email.includes('pro')) return 'pro'
+  return 'normal'
+}
+
 export default function ContractPage() {
+  const router = useRouter()
+  const { user, loading } = useAuth()
   const [contractText, setContractText] = useState('')
   const [contractType, setContractType] = useState('')
   const [contractContent, setContractContent] = useState('')
@@ -57,6 +84,94 @@ export default function ContractPage() {
   const [scanMode, setScanMode] = useState<'text' | 'image'>('text')
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isScanning, setIsScanning] = useState(false)
+  const [analysisCount, setAnalysisCount] = useState(0)
+  const [userLevel, setUserLevel] = useState<'normal' | 'pro' | 'admin'>('normal')
+  const [isLimitReached, setIsLimitReached] = useState(false)
+
+  // Kiểm tra đăng nhập và redirect nếu chưa đăng nhập
+  useEffect(() => {
+    if (!loading && !user) {
+      const currentPath = window.location.pathname
+      router.push(`/supabase-login?redirect=${encodeURIComponent(currentPath)}`)
+      toast.error('Vui lòng đăng nhập để sử dụng Phân tích Hợp đồng')
+    }
+  }, [user, loading, router])
+
+  // Lấy user level khi user đăng nhập
+  useEffect(() => {
+    if (user) {
+      const level = getUserLevel(user.email)
+      setUserLevel(level)
+    }
+  }, [user])
+
+  // Tải số lượng phân tích đã sử dụng khi user đăng nhập
+  useEffect(() => {
+    if (user && !loading) {
+      const userId = user.id
+      const countKey = getAnalysisCountKey(userId)
+
+      try {
+        const savedCount = localStorage.getItem(countKey)
+        if (savedCount) {
+          const count = parseInt(savedCount, 10)
+          if (!isNaN(count)) {
+            setAnalysisCount(count)
+            checkLimitReached(count, getUserLevel(user.email))
+          }
+        }
+      } catch (error) {
+        console.error('Error loading analysis count:', error)
+      }
+    }
+  }, [user, loading])
+
+  // Kiểm tra giới hạn
+  const checkLimitReached = (count: number, level: 'normal' | 'pro' | 'admin') => {
+    const limit = ANALYSIS_LIMITS[level]
+    if (limit !== Infinity && count >= limit) {
+      setIsLimitReached(true)
+      return true
+    }
+    setIsLimitReached(false)
+    return false
+  }
+
+  // Lưu số lượng phân tích
+  const saveAnalysisCount = (userId: string, count: number) => {
+    try {
+      const countKey = getAnalysisCountKey(userId)
+      localStorage.setItem(countKey, count.toString())
+    } catch (error) {
+      console.error('Error saving analysis count:', error)
+    }
+  }
+
+  // Lưu lịch sử phân tích vào localStorage
+  const saveAnalysisHistory = (userId: string, analysisData: any, contractText: string) => {
+    try {
+      const historyKey = getAnalysisHistoryKey(userId)
+      const existingHistory = localStorage.getItem(historyKey)
+      const history = existingHistory ? JSON.parse(existingHistory) : []
+      
+      const newEntry = {
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        contractText: contractText.substring(0, 200), // Lưu preview
+        analysis: analysisData,
+      }
+      
+      history.unshift(newEntry) // Thêm vào đầu
+      // Giữ tối đa 50 bản ghi
+      if (history.length > 50) {
+        history.pop()
+      }
+      
+      localStorage.setItem(historyKey, JSON.stringify(history))
+    } catch (error) {
+      console.error('Error saving analysis history:', error)
+    }
+  }
 
   const sampleContracts = [
     {
@@ -179,9 +294,33 @@ Bên A Bên B
   }
 
   const handleAnalyze = async () => {
-    if (!contractContent.trim() && !uploadedFile) return
+    // Kiểm tra đăng nhập
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để sử dụng Phân tích Hợp đồng')
+      router.push(`/supabase-login?redirect=${encodeURIComponent('/contract')}`)
+      return
+    }
+
+    if (!contractContent.trim() && !uploadedFile) {
+      toast.error('Vui lòng nhập nội dung hợp đồng hoặc tải lên file')
+      return
+    }
+
+    // Kiểm tra giới hạn số lần phân tích
+    const limit = ANALYSIS_LIMITS[userLevel]
+    if (limit !== Infinity && analysisCount >= limit) {
+      toast.error(`Bạn đã đạt giới hạn ${limit} lần phân tích cho gói ${userLevel}. Vui lòng nâng cấp để tiếp tục sử dụng.`)
+      setIsLimitReached(true)
+      return
+    }
 
     setIsAnalyzing(true)
+    
+    // Tăng số lượng phân tích và lưu
+    const newAnalysisCount = analysisCount + 1
+    setAnalysisCount(newAnalysisCount)
+    saveAnalysisCount(user.id, newAnalysisCount)
+    checkLimitReached(newAnalysisCount, userLevel)
     
     // Simulate AI analysis
     setTimeout(() => {
@@ -242,6 +381,11 @@ Bên A Bên B
       
       setAnalysis(mockAnalysis)
       setIsAnalyzing(false)
+      
+      // Lưu lịch sử phân tích
+      if (user) {
+        saveAnalysisHistory(user.id, mockAnalysis, contractContent || contractText)
+      }
     }, 3000)
   }
 
@@ -301,6 +445,26 @@ Bên A Bên B
     }
   }
 
+  // Hiển thị loading khi đang kiểm tra đăng nhập
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-accent-50 to-primary-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang kiểm tra đăng nhập...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Không hiển thị nội dung nếu chưa đăng nhập (sẽ redirect)
+  if (!user) {
+    return null
+  }
+
+  const limit = ANALYSIS_LIMITS[userLevel]
+  const remainingAnalyses = limit === Infinity ? '∞' : Math.max(0, limit - analysisCount)
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-accent-50 to-primary-100">
       {/* Header */}
@@ -316,7 +480,20 @@ Bên A Bên B
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
+            {/* Hiển thị số lần phân tích còn lại */}
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
+              {userLevel === 'pro' && <Crown className="w-4 h-4 text-yellow-600" />}
+              {userLevel === 'admin' && <Award className="w-4 h-4 text-red-600" />}
+              <span className="text-sm font-medium text-gray-700">
+                {isLimitReached ? (
+                  <span className="text-red-600">Đã hết lượt</span>
+                ) : (
+                  <span>Còn lại: <strong>{remainingAnalyses}</strong> lần phân tích</span>
+                )}
+              </span>
+            </div>
+
             <button
               onClick={handleClear}
               className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
@@ -334,6 +511,32 @@ Bên A Bên B
           </div>
         </div>
       </header>
+
+      {/* Thông báo khi đạt giới hạn */}
+      {isLimitReached && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between"
+          >
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600" />
+              <div>
+                <p className="font-medium text-gray-900">Bạn đã đạt giới hạn {limit} lần phân tích cho gói {userLevel}</p>
+                <p className="text-sm text-gray-600">Nâng cấp lên Pro để được {ANALYSIS_LIMITS.pro} lần phân tích/tháng</p>
+              </div>
+            </div>
+            <Link
+              href="/payment?pkg=Pro"
+              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <Crown className="w-4 h-4" />
+              <span>Nâng cấp ngay</span>
+            </Link>
+          </motion.div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -423,18 +626,36 @@ Bên A Bên B
                   />
                 </div>
 
+                {isLimitReached && (
+                  <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center space-x-2">
+                    <Lock className="w-4 h-4 text-yellow-600" />
+                    <p className="text-sm text-yellow-800">
+                      Bạn đã đạt giới hạn. Vui lòng nâng cấp để tiếp tục sử dụng.
+                    </p>
+                  </div>
+                )}
                 <div className="flex space-x-3">
                   <button
                     onClick={handleAnalyze}
-                    disabled={!contractContent.trim() && !uploadedFile}
+                    disabled={(!contractContent.trim() && !uploadedFile) || isLimitReached || isAnalyzing}
                     className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Search className="w-4 h-4 mr-2" />
-                    Phân tích
+                    {isAnalyzing ? (
+                      <>
+                        <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
+                        Đang phân tích...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4 mr-2" />
+                        Phân tích
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={handleScanImage}
-                    className="flex items-center px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700"
+                    disabled={isLimitReached}
+                    className="flex items-center px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Quét hình ảnh"
                   >
                     <Camera className="w-4 h-4" />

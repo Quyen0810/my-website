@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0"
+    "eslint-config-next": "^15.0.0"
   },
   "overrides": {
     "prismjs": ">=1.30.0"

@@ -11,41 +11,45 @@ export async function middleware(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) {
-          return req.cookies.get(name)?.value ?? null
+        get(name: string) {
+          return req.cookies.get(name)?.value
         },
-        set(name, value, options) {
-          res.cookies.set({ name, value, ...options })
+        set(name: string, value: string, options: any) {
+          res.cookies.set({
+            name,
+            value,
+            ...options,
+          })
         },
-        remove(name, options) {
-          res.cookies.set({ name, value: '', ...options, maxAge: 0 })
+        remove(name: string, options: any) {
+          res.cookies.set({
+            name,
+            value: '',
+            ...options,
+            maxAge: 0,
+          })
         },
       },
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // Refresh session nếu có để đảm bảo session được cập nhật
+  const { data: { user } } = await supabase.auth.getUser()
+  const hasSession = !!user
 
-  // ✅ Bảo vệ các route yêu cầu đăng nhập
-  if (
-    req.nextUrl.pathname.startsWith('/dashboard') ||
-    req.nextUrl.pathname.startsWith('/admin') ||
-    req.nextUrl.pathname.startsWith('/payment')
-  ) {
-    if (!session) {
-      const url = new URL('/supabase-login', req.url)
-      const redirect = NextResponse.redirect(url)
-      // propagate any auth cookies set during getSession back to the client
-      res.cookies.getAll().forEach((c) => redirect.cookies.set(c))
-      return redirect
-    }
-  }
-
-  // ✅ Redirect người đã đăng nhập khỏi trang login
-  if (req.nextUrl.pathname === '/supabase-login' && session) {
-    const url = new URL('/', req.url)
+  // ✅ TẮT CHỨC NĂNG BẮT BUỘC ĐĂNG NHẬP
+  // Tất cả routes đều có thể truy cập mà không cần đăng nhập
+  // Chỉ redirect người đã đăng nhập khỏi trang login về trang chủ (optional)
+  
+  // ✅ Redirect người đã đăng nhập khỏi trang login về trang đích hoặc trang chủ (tùy chọn)
+  if ((req.nextUrl.pathname === '/supabase-login' || req.nextUrl.pathname === '/login') && hasSession) {
+    const redirectUrl = req.nextUrl.searchParams.get('redirect') || '/'
+    const url = new URL(redirectUrl, req.url)
     const redirect = NextResponse.redirect(url)
-    res.cookies.getAll().forEach((c) => redirect.cookies.set(c))
+    // Copy cookies từ res sang redirect
+    res.cookies.getAll().forEach((cookie) => {
+      redirect.cookies.set(cookie.name, cookie.value)
+    })
     return redirect
   }
 
