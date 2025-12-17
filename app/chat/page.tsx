@@ -16,62 +16,15 @@ import {
   Copy,
   MessageSquare,
   FileText,
-  Search,
   BookOpen,
   Scale,
   Gavel,
   Building,
-  Calendar,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  Zap,
-  Lightbulb,
-  Target,
-  TrendingUp,
-  Award,
-  Clock,
-  CheckCircle,
-  Star,
-  ArrowRight,
-  Play,
-  Pause,
-  SkipForward,
-  SkipBack,
-  Volume1,
-  Volume2 as Volume2Icon,
-  VolumeX as VolumeXIcon,
-  Settings as SettingsIcon,
-  Share2 as ShareIcon,
-  Copy as CopyIcon,
-  MessageSquare as MessageSquareIcon,
-  FileText as FileTextIcon,
-  Search as SearchIcon,
-  BookOpen as BookOpenIcon,
-  Scale as ScaleIcon,
-  Gavel as GavelIcon,
-  Building as BuildingIcon,
-  Calendar as CalendarIcon,
-  ChevronDown as ChevronDownIcon,
-  ChevronUp as ChevronUpIcon,
-  Sparkles as SparklesIcon,
-  Zap as ZapIcon,
-  Lightbulb as LightbulbIcon,
-  Target as TargetIcon,
-  TrendingUp as TrendingUpIcon,
-  Award as AwardIcon,
-  Clock as ClockIcon,
-  CheckCircle as CheckCircleIcon,
-  Star as StarIcon,
-  ArrowRight as ArrowRightIcon,
-  Play as PlayIcon,
-  Pause as PauseIcon,
-  SkipForward as SkipForwardIcon,
-  SkipBack as SkipBackIcon,
-  Volume1 as Volume1Icon,
   Crown,
   AlertCircle,
   Lock,
+  Award,
+  ArrowRight,
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -263,19 +216,6 @@ export default function ChatPage() {
         console.error('Error loading chat history:', error)
       }
 
-      // Tải số lượng câu hỏi đã sử dụng
-      // try {
-      //   const savedCount = localStorage.getItem(countKey)
-      //   if (savedCount) {
-      //     const count = parseInt(savedCount, 10)
-      //     if (!isNaN(count)) {
-      //       setQueryCount(count)
-      //       checkLimitReached(count, getUserLevel(user.email))
-      //     }
-      //   }
-      // } catch (error) {
-      //   console.error('Error loading query count:', error)
-      // }
     }
   }, [user, loading])
 
@@ -297,13 +237,6 @@ export default function ChatPage() {
       return
     }
 
-    // Kiểm tra giới hạn số câu hỏi
-    // const limit = QUERY_LIMITS[userLevel]
-    // if (limit !== Infinity && queryCount >= limit) {
-    //   toast.error(`Bạn đã đạt giới hạn ${limit} câu hỏi cho gói ${userLevel}. Vui lòng nâng cấp để tiếp tục sử dụng.`)
-    //   setIsLimitReached(true)
-    //   return
-    // }
 
     const getFallbackReply = () =>
       'Hiện tại không thể gọi AI. ' +
@@ -461,21 +394,6 @@ export default function ChatPage() {
     }
   }
 
-  type WebhookPayload = {
-    message: string;
-    section_id: string;
-  };
-  
-  type WebhookOK = { output?: string; [k: string]: unknown };
-  type WebhookErr = { error?: string; [k: string]: unknown };
-  
-  interface SendResult {
-    id: number;
-    question: string;
-    response?: WebhookOK | WebhookErr;
-    error?: string;
-  }
-  
   const generateAIResponse = async (
     userInput: string,
     onChunk?: (chunk: string) => void,
